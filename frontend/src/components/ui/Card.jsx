@@ -1,0 +1,1 @@
+import React from'react';export default function Card({children,className='',title,action}){return <section className={`glass rounded-xl ${className}`}>{title&&<div className="flex items-center justify-between border-b border-sg-line px-4 py-3"><h3 className="text-sm font-semibold text-white">{title}</h3>{action}</div>}{children}</section>}

@@ -1,0 +1,1 @@
+import React from'react';import{riskClass}from'../../utils/helpers';export default function Badge({children,risk}){return <span className={`inline-flex items-center rounded-full border px-2 py-1 text-[10px] font-bold ${riskClass(risk||children)}`}>{children}</span>}

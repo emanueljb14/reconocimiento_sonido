@@ -1,0 +1,1 @@
+import React from'react';export default function Input({label,...p}){return <label className="block space-y-1.5"><span className="text-xs text-sg-muted">{label}</span><input className="w-full rounded-lg border border-sg-line bg-[#04132d] px-3 py-2.5 text-sm outline-none transition placeholder:text-slate-600 focus:border-sg-cyan" {...p}/></label>}

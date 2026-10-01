@@ -1,0 +1,1 @@
+import React from'react';import DashboardLayout from'../../components/layout/DashboardLayout';import DetectionTable from'../../components/detection/DetectionTable';export default function UserDetections(){return <DashboardLayout title="Mis detecciones" subtitle="Consulta tus eventos acústicos recientes."><DetectionTable title="Historial de detecciones"/></DashboardLayout>}

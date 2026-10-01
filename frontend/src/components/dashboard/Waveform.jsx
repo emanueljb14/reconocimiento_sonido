@@ -1,0 +1,1 @@
+import React from'react';export default function Waveform({bars=32}){return <div className="flex h-14 items-center gap-1 overflow-hidden">{Array.from({length:bars},(_,i)=><span key={i} className="wave w-1 rounded-full bg-sg-cyan" style={{height:`${20+((i*17)%34)}px`}}/>)}</div>}
