@@ -33,3 +33,5 @@ build/
 # Sistema
 .DS_Store
 Thumbs.db
+
+/esc50/

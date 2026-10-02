@@ -1,2 +1,353 @@
-import React from 'react';import{BrowserRouter,Routes,Route,Navigate}from'react-router-dom';import{AuthProvider}from'./context/AuthContext';import{DetectionProvider}from'./context/DetectionContext';import ProtectedRoute from'./components/layout/ProtectedRoute';import Login from'./pages/auth/Login';import Register from'./pages/auth/Register';import ForgotPassword from'./pages/auth/ForgotPassword';import AdminDashboard from'./pages/admin/AdminDashboard';import Users from'./pages/admin/Users';import AdminDetections from'./pages/admin/AdminDetections';import AdminHistory from'./pages/admin/AdminHistory';import AdminStatistics from'./pages/admin/AdminStatistics';import AIModel from'./pages/admin/AIModel';import VoiceAssistant from'./pages/admin/VoiceAssistant';import Settings from'./pages/admin/Settings';import SupervisorDashboard from'./pages/supervisor/SupervisorDashboard';import SupervisorDetections from'./pages/supervisor/SupervisorDetections';import SupervisorHistory from'./pages/supervisor/SupervisorHistory';import SupervisorStatistics from'./pages/supervisor/SupervisorStatistics';import UserDashboard from'./pages/user/UserDashboard';import UserDetections from'./pages/user/UserDetections';import UserHistory from'./pages/user/UserHistory';import UserStatistics from'./pages/user/UserStatistics';
-export default function App(){return <BrowserRouter><AuthProvider><DetectionProvider><Routes><Route path="/login" element={<Login/>}/><Route path="/register" element={<Register/>}/><Route path="/forgot-password" element={<ForgotPassword/>}/><Route path="/admin" element={<ProtectedRoute roles={['admin']}><AdminDashboard/></ProtectedRoute>}/><Route path="/admin/users" element={<ProtectedRoute roles={['admin']}><Users/></ProtectedRoute>}/><Route path="/admin/detections" element={<ProtectedRoute roles={['admin']}><AdminDetections/></ProtectedRoute>}/><Route path="/admin/history" element={<ProtectedRoute roles={['admin']}><AdminHistory/></ProtectedRoute>}/><Route path="/admin/statistics" element={<ProtectedRoute roles={['admin']}><AdminStatistics/></ProtectedRoute>}/><Route path="/admin/ai" element={<ProtectedRoute roles={['admin']}><AIModel/></ProtectedRoute>}/><Route path="/admin/voice" element={<ProtectedRoute roles={['admin']}><VoiceAssistant/></ProtectedRoute>}/><Route path="/admin/settings" element={<ProtectedRoute roles={['admin']}><Settings/></ProtectedRoute>}/><Route path="/supervisor" element={<ProtectedRoute roles={['supervisor']}><SupervisorDashboard/></ProtectedRoute>}/><Route path="/supervisor/detections" element={<ProtectedRoute roles={['supervisor']}><SupervisorDetections/></ProtectedRoute>}/><Route path="/supervisor/history" element={<ProtectedRoute roles={['supervisor']}><SupervisorHistory/></ProtectedRoute>}/><Route path="/supervisor/statistics" element={<ProtectedRoute roles={['supervisor']}><SupervisorStatistics/></ProtectedRoute>}/><Route path="/supervisor/ai" element={<ProtectedRoute roles={['supervisor']}><AIModel/></ProtectedRoute>}/><Route path="/supervisor/voice" element={<ProtectedRoute roles={['supervisor']}><VoiceAssistant/></ProtectedRoute>}/><Route path="/supervisor/settings" element={<ProtectedRoute roles={['supervisor']}><Settings/></ProtectedRoute>}/><Route path="/usuario" element={<ProtectedRoute roles={['user']}><UserDashboard/></ProtectedRoute>}/><Route path="/usuario/detections" element={<ProtectedRoute roles={['user']}><UserDetections/></ProtectedRoute>}/><Route path="/usuario/history" element={<ProtectedRoute roles={['user']}><UserHistory/></ProtectedRoute>}/><Route path="/usuario/statistics" element={<ProtectedRoute roles={['user']}><UserStatistics/></ProtectedRoute>}/><Route path="/usuario/settings" element={<ProtectedRoute roles={['user']}><Settings/></ProtectedRoute>}/><Route path="/" element={<Navigate to="/login" replace/>}/><Route path="*" element={<Navigate to="/" replace/>}/></Routes></DetectionProvider></AuthProvider></BrowserRouter>}
+import {
+    Navigate,
+    Route,
+    Routes,
+} from "react-router-dom";
+
+import ProtectedRoute from "./components/layout/ProtectedRoute";
+
+
+/* =========================================
+   AUTENTICACIÓN
+========================================= */
+
+import SplashScreen from "./pages/auth/SplashScreen";
+import Login from "./pages/auth/Login";
+import Register from "./pages/auth/Register";
+import ForgotPassword from "./pages/auth/ForgotPassword";
+
+
+/* =========================================
+   ADMINISTRADOR
+========================================= */
+
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminDetections from "./pages/admin/AdminDetections";
+import AdminHistory from "./pages/admin/AdminHistory";
+import AdminStatistics from "./pages/admin/AdminStatistics";
+import AIModel from "./pages/admin/AIModel";
+import Users from "./pages/admin/Users";
+import VoiceAssistant from "./pages/admin/VoiceAssistant";
+import AdminSettings from "./pages/admin/Settings";
+
+
+/* =========================================
+   SUPERVISOR
+========================================= */
+
+import SupervisorDashboard from "./pages/supervisor/SupervisorDashboard";
+import SupervisorDetections from "./pages/supervisor/SupervisorDetections";
+import SupervisorHistory from "./pages/supervisor/SupervisorHistory";
+import SupervisorStatistics from "./pages/supervisor/SupervisorStatistics";
+import SupervisorSettings from "./pages/supervisor/Settings";
+
+
+/* =========================================
+   USUARIO
+========================================= */
+
+import UserDashboard from "./pages/user/UserDashboard";
+import UserDetections from "./pages/user/UserDetections";
+import UserHistory from "./pages/user/UserHistory";
+import UserStatistics from "./pages/user/UserStatistics";
+import UserSettings from "./pages/user/Settings";
+
+
+/* =========================================
+   PROTECCIÓN DE RUTAS
+========================================= */
+
+function Proteger({
+    roles,
+    children,
+}) {
+    return (
+        <ProtectedRoute roles={roles}>
+            {children}
+        </ProtectedRoute>
+    );
+}
+
+
+/* =========================================
+   APP
+========================================= */
+
+export default function App() {
+    return (
+        <Routes>
+
+            {/* =====================================
+          PANTALLA INICIAL
+      ====================================== */}
+
+            <Route
+                path="/"
+                element={<SplashScreen />}
+            />
+
+
+            {/* =====================================
+          AUTENTICACIÓN
+      ====================================== */}
+
+            <Route
+                path="/login"
+                element={<Login />}
+            />
+
+            <Route
+                path="/registro"
+                element={<Register />}
+            />
+
+            <Route
+                path="/register"
+                element={<Register />}
+            />
+
+            <Route
+                path="/recuperar-password"
+                element={<ForgotPassword />}
+            />
+
+            <Route
+                path="/forgot-password"
+                element={<ForgotPassword />}
+            />
+
+
+            {/* =====================================
+          ADMINISTRADOR
+      ====================================== */}
+
+            <Route
+                path="/admin"
+                element={
+                    <Navigate
+                        to="/admin/dashboard"
+                        replace
+                    />
+                }
+            />
+
+            <Route
+                path="/admin/dashboard"
+                element={
+                    <Proteger roles={["admin"]}>
+                        <AdminDashboard />
+                    </Proteger>
+                }
+            />
+
+            <Route
+                path="/admin/detecciones"
+                element={
+                    <Proteger roles={["admin"]}>
+                        <AdminDetections />
+                    </Proteger>
+                }
+            />
+
+            <Route
+                path="/admin/historial"
+                element={
+                    <Proteger roles={["admin"]}>
+                        <AdminHistory />
+                    </Proteger>
+                }
+            />
+
+            <Route
+                path="/admin/estadisticas"
+                element={
+                    <Proteger roles={["admin"]}>
+                        <AdminStatistics />
+                    </Proteger>
+                }
+            />
+
+            <Route
+                path="/admin/modelo-ia"
+                element={
+                    <Proteger roles={["admin"]}>
+                        <AIModel />
+                    </Proteger>
+                }
+            />
+
+            <Route
+                path="/admin/usuarios"
+                element={
+                    <Proteger roles={["admin"]}>
+                        <Users />
+                    </Proteger>
+                }
+            />
+
+            <Route
+                path="/admin/asistente"
+                element={
+                    <Proteger roles={["admin"]}>
+                        <VoiceAssistant />
+                    </Proteger>
+                }
+            />
+
+            <Route
+                path="/admin/configuracion"
+                element={
+                    <Proteger roles={["admin"]}>
+                        <AdminSettings />
+                    </Proteger>
+                }
+            />
+
+
+            {/* =====================================
+          SUPERVISOR
+      ====================================== */}
+
+            <Route
+                path="/supervisor"
+                element={
+                    <Navigate
+                        to="/supervisor/dashboard"
+                        replace
+                    />
+                }
+            />
+
+            <Route
+                path="/supervisor/dashboard"
+                element={
+                    <Proteger roles={["supervisor"]}>
+                        <SupervisorDashboard />
+                    </Proteger>
+                }
+            />
+
+            <Route
+                path="/supervisor/detecciones"
+                element={
+                    <Proteger roles={["supervisor"]}>
+                        <SupervisorDetections />
+                    </Proteger>
+                }
+            />
+
+            <Route
+                path="/supervisor/historial"
+                element={
+                    <Proteger roles={["supervisor"]}>
+                        <SupervisorHistory />
+                    </Proteger>
+                }
+            />
+
+            <Route
+                path="/supervisor/estadisticas"
+                element={
+                    <Proteger roles={["supervisor"]}>
+                        <SupervisorStatistics />
+                    </Proteger>
+                }
+            />
+
+            <Route
+                path="/supervisor/configuracion"
+                element={
+                    <Proteger roles={["supervisor"]}>
+                        <SupervisorSettings />
+                    </Proteger>
+                }
+            />
+
+
+            {/* =====================================
+          USUARIO
+      ====================================== */}
+
+            <Route
+                path="/user"
+                element={
+                    <Navigate
+                        to="/user/dashboard"
+                        replace
+                    />
+                }
+            />
+
+            <Route
+                path="/usuario"
+                element={
+                    <Navigate
+                        to="/user/dashboard"
+                        replace
+                    />
+                }
+            />
+
+            <Route
+                path="/user/dashboard"
+                element={
+                    <Proteger roles={["user"]}>
+                        <UserDashboard />
+                    </Proteger>
+                }
+            />
+
+            <Route
+                path="/user/detecciones"
+                element={
+                    <Proteger roles={["user"]}>
+                        <UserDetections />
+                    </Proteger>
+                }
+            />
+
+            <Route
+                path="/user/historial"
+                element={
+                    <Proteger roles={["user"]}>
+                        <UserHistory />
+                    </Proteger>
+                }
+            />
+
+            <Route
+                path="/user/estadisticas"
+                element={
+                    <Proteger roles={["user"]}>
+                        <UserStatistics />
+                    </Proteger>
+                }
+            />
+
+            <Route
+                path="/user/configuracion"
+                element={
+                    <Proteger roles={["user"]}>
+                        <UserSettings />
+                    </Proteger>
+                }
+            />
+
+
+            {/* =====================================
+          RUTA NO ENCONTRADA
+      ====================================== */}
+
+            <Route
+                path="*"
+                element={
+                    <Navigate
+                        to="/login"
+                        replace
+                    />
+                }
+            />
+
+        </Routes>
+    );
+}

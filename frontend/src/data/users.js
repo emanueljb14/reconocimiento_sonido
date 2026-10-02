@@ -1,1 +1,32 @@
-export const seedUsers=[{id:1,name:'Administrador',email:'admin@soundguard.com',password:'admin123',role:'admin',status:'Activo',lastAccess:'Hoy 20:42',createdAt:'01/09/2025'},{id:2,name:'Supervisor',email:'supervisor@soundguard.com',password:'supervisor123',role:'supervisor',status:'Activo',lastAccess:'Hoy 20:38',createdAt:'03/09/2025'},{id:3,name:'Usuario',email:'usuario@soundguard.com',password:'usuario123',role:'user',status:'Activo',lastAccess:'Hoy 20:31',createdAt:'05/09/2025'}];
+export const seedUsers = [
+    {
+        id: 1,
+        name: "Administrador",
+        email: "admin@soundguard.com",
+        password: "admin202615489499918",
+        role: "admin",
+        status: "Activo",
+        lastAccess: "Hoy",
+        createdAt: "01/09/2025",
+    },
+    {
+        id: 2,
+        name: "Supervisor",
+        email: "supervisor@soundguard.com",
+        password: "SG_Supervisor_2026!",
+        role: "supervisor",
+        status: "Activo",
+        lastAccess: "Hoy",
+        createdAt: "03/09/2025",
+    },
+    {
+        id: 3,
+        name: "Usuario",
+        email: "usuario@soundguard.com",
+        password: "SG_User_2026_demo!",
+        role: "user",
+        status: "Activo",
+        lastAccess: "Hoy",
+        createdAt: "05/09/2025",
+    },
+];
