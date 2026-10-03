@@ -127,14 +127,14 @@ WSGI_APPLICATION = "configuracion.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": "soundguard",
-        "USER": "postgres",
+        "NAME": "postgres",
+        "USER": "postgres.dazvgapxpqeiazqofnzy",
 
         # Pon aquí tu contraseña LOCAL de PostgreSQL.
         # No subas la contraseña real a GitHub.
-        "PASSWORD": "emanuelbello",
+        "PASSWORD": "7FblN4IuK8AVPadb",
 
-        "HOST": "localhost",
+        "HOST": "aws-0-us-west-2.pooler.supabase.com",
         "PORT": "5432",
     }
 }

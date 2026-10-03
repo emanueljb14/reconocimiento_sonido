@@ -8,16 +8,20 @@ export const roleLabel = (role) => {
     );
 };
 
+export function normalizeRole(rol) {
+  if (!rol) return 'user';
+  const r = rol.toString().toUpperCase();
+  if (r === 'ADMINISTRADOR' || r === 'ADMIN') return 'admin';
+  if (r === 'SUPERVISOR') return 'supervisor';
+  return 'user';
+}
 
-export const roleHome = (role) => {
-    return (
-        {
-            admin: "/admin/dashboard",
-            supervisor: "/supervisor/dashboard",
-            user: "/user/dashboard",
-        }[role] || "/login"
-    );
-};
+export function roleHome(rol) {
+  const norm = normalizeRole(rol);
+  if (norm === 'admin') return '/admin/dashboard';
+  if (norm === 'supervisor') return '/supervisor/dashboard';
+  return '/user/dashboard';
+}
 
 
 export const cn = (...values) => {
