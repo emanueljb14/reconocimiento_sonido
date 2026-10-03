@@ -1,7 +1,7 @@
 from django_filters.rest_framework import DjangoFilterBackend
 
 from rest_framework import filters, viewsets
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import IsAuthenticated
 
 from .filters import DeteccionFilter
 from .models import Deteccion
@@ -13,7 +13,9 @@ class DeteccionViewSet(viewsets.ModelViewSet):
     serializer_class = DeteccionSerializer
 
     # TEMPORAL mientras usuarios/login no esté integrado.
-    permission_classes = [AllowAny]
+    permission_classes = [
+    IsAuthenticated
+]
 
     filter_backends = [
         DjangoFilterBackend,
