@@ -1,63 +1,245 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { normalizeRole } from '../utils/helpers';
+import React, {
+    createContext,
+    useContext,
+    useState,
+} from "react";
 
-const AuthContext = createContext();
+import {
+    iniciarSesion,
+    registrarUsuario,
+} from "../services/usuarios";
 
-export function AuthProvider({ children }) {
-  const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem('soundguard_user');
-    return saved ? JSON.parse(saved) : null;
-  });
 
-  const login = async (username, password, remember) => {
+const C = createContext(null);
+
+const SESSION = "sg_session";
+
+
+function readSession() {
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/usuarios/login/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username, password }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        return { ok: false, error: data.non_field_errors?.[0] || 'Credenciales inválidas' };
-      }
-
-      // Estructurar el objeto usuario reconociendo el rol de Django
-      const usuarioFormateado = {
-        id: data.user_id,
-        username: data.username,
-        email: data.email,
-        token: data.token,
-        role: normalizeRole(data.rol), // Se convierte a "admin", "supervisor" o "user"
-      };
-
-      setUser(usuarioFormateado);
-
-      if (remember) {
-        localStorage.setItem('soundguard_user', JSON.stringify(usuarioFormateado));
-        localStorage.setItem('token', data.token);
-      }
-
-      return { ok: true, user: usuarioFormateado };
-    } catch (err) {
-      return { ok: false, error: 'Error de conexión con el servidor backend' };
+        return JSON.parse(
+            localStorage.getItem(SESSION) ||
+            sessionStorage.getItem(SESSION) ||
+            "null"
+        );
+    } catch {
+        return null;
     }
-  };
-
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('soundguard_user');
-    localStorage.removeItem('token');
-  };
-
-  return (
-    <AuthContext.Provider value={{ user, login, logout }}>
-      {children}
-    </AuthContext.Provider>
-  );
 }
 
-export const useAuth = () => useContext(AuthContext);
+
+function normalizarRol(rol) {
+    const valor = String(
+        rol || ""
+    ).toUpperCase();
+
+    if (
+        valor === "ADMINISTRADOR" ||
+        valor === "ADMIN"
+    ) {
+        return "admin";
+    }
+
+    if (
+        valor === "SUPERVISOR"
+    ) {
+        return "supervisor";
+    }
+
+    if (
+        valor === "USUARIO" ||
+        valor === "USER"
+    ) {
+        return "user";
+    }
+
+    return null;
+}
+
+
+function normalizeUser(payload) {
+    const source =
+        payload?.user ||
+        payload?.usuario ||
+        payload?.data?.user ||
+        payload?.data?.usuario ||
+        payload?.data ||
+        payload ||
+        {};
+
+    return {
+        ...source,
+
+        id:
+            source.id ??
+            source.pk ??
+            null,
+
+        username:
+            source.username ||
+            source.usuario ||
+            "",
+
+        name:
+            source.name ||
+            source.nombre ||
+            source.username ||
+            "Usuario",
+
+        email:
+            source.email ||
+            source.correo ||
+            "",
+
+        role:
+            normalizarRol(
+                source.rol ||
+                source.role ||
+                payload?.rol ||
+                payload?.role
+            ),
+    };
+}
+
+
+export function AuthProvider({
+    children,
+}) {
+    const [
+        user,
+        setUser,
+    ] = useState(
+        readSession
+    );
+
+
+    const login = async (
+        username,
+        password,
+        remember = true
+    ) => {
+        try {
+            const payload =
+                await iniciarSesion({
+                    username,
+                    password,
+                });
+
+            const safe =
+                normalizeUser(payload);
+
+
+            if (!safe.role) {
+                return {
+                    ok: false,
+                    error:
+                        "El servidor no devolvió un rol válido.",
+                };
+            }
+
+
+            setUser(safe);
+
+
+            localStorage.removeItem(
+                SESSION
+            );
+
+            sessionStorage.removeItem(
+                SESSION
+            );
+
+
+            const storage =
+                remember
+                    ? localStorage
+                    : sessionStorage;
+
+
+            storage.setItem(
+                SESSION,
+                JSON.stringify(safe)
+            );
+
+
+            return {
+                ok: true,
+                user: safe,
+            };
+
+        } catch (error) {
+            const message =
+                error?.response?.data?.detail ||
+                error?.response?.data?.non_field_errors?.[0] ||
+                "Usuario o contraseña incorrectos";
+
+            return {
+                ok: false,
+                error: message,
+            };
+        }
+    };
+
+
+    const logout = () => {
+        setUser(null);
+
+        localStorage.removeItem(
+            SESSION
+        );
+
+        sessionStorage.removeItem(
+            SESSION
+        );
+
+        localStorage.removeItem(
+            "token"
+        );
+    };
+
+
+    const register = async (
+        data
+    ) => {
+        try {
+            await registrarUsuario(
+                data
+            );
+
+            return {
+                ok: true,
+            };
+
+        } catch (error) {
+            return {
+                ok: false,
+
+                error:
+                    error?.response?.data?.username?.[0] ||
+                    error?.response?.data?.email?.[0] ||
+                    error?.response?.data?.password?.[0] ||
+                    error?.response?.data?.detail ||
+                    "No se pudo registrar el usuario",
+            };
+        }
+    };
+
+
+    return (
+        <C.Provider
+            value={{
+                user,
+                users: [],
+                login,
+                logout,
+                register,
+            }}
+        >
+            {children}
+        </C.Provider>
+    );
+}
+
+
+export const useAuth = () =>
+    useContext(C);
