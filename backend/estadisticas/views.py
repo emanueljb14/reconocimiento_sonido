@@ -1,4 +1,4 @@
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -20,7 +20,7 @@ from .services import (
 
 
 class ResumenEstadisticasView(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         datos = obtener_resumen(
@@ -37,7 +37,7 @@ class ResumenEstadisticasView(APIView):
 
 
 class EstadisticasPorSonidoView(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         datos = obtener_por_sonido(
@@ -55,7 +55,7 @@ class EstadisticasPorSonidoView(APIView):
 
 
 class EstadisticasPorRiesgoView(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         datos = obtener_por_riesgo(
@@ -73,7 +73,7 @@ class EstadisticasPorRiesgoView(APIView):
 
 
 class EstadisticasPorHoraView(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         datos = obtener_por_hora(
@@ -91,7 +91,7 @@ class EstadisticasPorHoraView(APIView):
 
 
 class EstadisticasPorDiaView(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         dias = request.query_params.get(
@@ -101,7 +101,7 @@ class EstadisticasPorDiaView(APIView):
 
         try:
             dias = int(dias)
-        except ValueError:
+        except (ValueError, TypeError):
             dias = 7
 
         dias = max(

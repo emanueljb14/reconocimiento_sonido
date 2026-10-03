@@ -1,42 +1,68 @@
-export const roleLabel = (role) => {
-    return (
-        {
-            admin: "Administrador",
-            supervisor: "Supervisor",
-            user: "Usuario",
-        }[role] || role
-    );
+export const roleLabel = (
+    role
+) => {
+    return {
+        admin: "Administrador",
+        supervisor: "Supervisor",
+        user: "Usuario",
+    }[role] || role;
 };
 
 
-export const roleHome = (role) => {
-    return (
-        {
-            admin: "/admin/dashboard",
-            supervisor: "/supervisor/dashboard",
-            user: "/user/dashboard",
-        }[role] || "/login"
-    );
+export const roleHome = (
+    role
+) => {
+    return {
+        admin:
+            "/admin/dashboard",
+
+        supervisor:
+            "/supervisor/dashboard",
+
+        user:
+            "/user/dashboard",
+    }[role] || "/login";
 };
 
 
-export const cn = (...values) => {
-    return values.filter(Boolean).join(" ");
+export const cn = (
+    ...values
+) => {
+    return values
+        .filter(Boolean)
+        .join(" ");
 };
 
 
-export const riskClass = (risk) => {
-    if (risk === "CRITICO") {
+export const riskClass = (
+    risk
+) => {
+    const valor =
+        String(
+            risk || ""
+        ).toUpperCase();
+
+
+    if (
+        valor === "CRITICO"
+    ) {
         return "bg-red-700/15 text-red-400 border-red-700/30";
     }
 
-    if (risk === "ALTO") {
+
+    if (
+        valor === "ALTO"
+    ) {
         return "bg-sg-red/15 text-sg-red border-sg-red/30";
     }
 
-    if (risk === "MEDIO") {
+
+    if (
+        valor === "MEDIO"
+    ) {
         return "bg-sg-yellow/15 text-sg-yellow border-sg-yellow/30";
     }
+
 
     return "bg-sg-green/15 text-sg-green border-sg-green/30";
 };
