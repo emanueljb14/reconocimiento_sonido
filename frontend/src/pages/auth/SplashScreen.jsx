@@ -6,128 +6,342 @@ import React, {
 } from "react";
 
 import {
+    Activity,
     ArrowRight,
+    AudioWaveform,
     BrainCircuit,
+    Calendar,
+    Clock,
+    Database,
     Mic2,
+    RefreshCw,
+    Server,
     ShieldCheck,
-    Sparkles,
     Volume2,
     VolumeX,
-    Waves,
 } from "lucide-react";
 
 import { useNavigate } from "react-router-dom";
 
+import {
+    obtenerEstadoModelo,
+    obtenerMetricasModelo,
+} from "../../services/inteligencia";
+
 import "./SplashScreen.css";
 
 
-const DURACION = 17000;
+const EQUIPO = [
+    "Jostin Davalos",
+    "Renzo Silva",
+    "Emanuel Bello",
+    "Omar",
+];
+
+
+const CLASES_BASE = [
+    "golpe",
+    "puerta",
+    "alarma",
+    "aplausos",
+    "vidrio",
+    "ruido_elevado",
+];
+
+
+const NUMERO_BARRAS = 36;
 
 
 const MENSAJE_BIENVENIDA =
-    "Bienvenido a SoundGuard AI. " +
-    "Nuestro sistema inteligente escucha, analiza y reconoce sonidos importantes en tiempo real. " +
-    "Transformamos el sonido en información útil para ayudarte a actuar con mayor rapidez y seguridad. " +
-    "SoundGuard AI. Escucha, analiza y protege.";
+    "Bienvenido a SoundGuard. " +
+    "Sistema de detección acústica desarrollado por Jostin Davalos, Renzo Silva, Emanuel Bello y Omar, " +
+    "bajo el liderazgo del Coronel Leonzo Prado. " +
+    "La plataforma captura audio real, analiza eventos sonoros y registra información útil para su interpretación.";
+
+
+function porcentaje(valor) {
+    const numero = Number(valor);
+
+    if (!Number.isFinite(numero)) {
+        return "—";
+    }
+
+    return `${(numero * 100).toFixed(1)}%`;
+}
+
+
+function nombreClase(valor) {
+    return String(valor || "")
+        .replaceAll("_", " ")
+        .replace(/\b\w/g, (letra) =>
+            letra.toUpperCase()
+        );
+}
+
+
+function formatearFecha(fecha) {
+    return fecha.toLocaleDateString(
+        "es-PE",
+        {
+            weekday: "long",
+            day: "2-digit",
+            month: "long",
+            year: "numeric",
+        }
+    );
+}
+
+
+function formatearHora(fecha) {
+    return fecha.toLocaleTimeString(
+        "es-PE",
+        {
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+            hour12: false,
+        }
+    );
+}
 
 
 export default function SplashScreen() {
     const navigate = useNavigate();
 
-    const [progress, setProgress] = useState(0);
-    const [closing, setClosing] = useState(false);
-    const [speaking, setSpeaking] = useState(false);
+    const [ahora, setAhora] =
+        useState(new Date());
 
-    const voiceStarted = useRef(false);
+    const [
+        backendEstado,
+        setBackendEstado,
+    ] = useState("cargando");
+
+    const [
+        estadoModelo,
+        setEstadoModelo,
+    ] = useState(null);
+
+    const [
+        metricasModelo,
+        setMetricasModelo,
+    ] = useState(null);
+
+    const [
+        errorBackend,
+        setErrorBackend,
+    ] = useState("");
+
+    const [
+        speaking,
+        setSpeaking,
+    ] = useState(false);
+
+    const [
+        micEstado,
+        setMicEstado,
+    ] = useState("apagado");
+
+    const [
+        nivelMic,
+        setNivelMic,
+    ] = useState(0);
+
+    const [
+        barras,
+        setBarras,
+    ] = useState(
+        Array(NUMERO_BARRAS).fill(4)
+    );
+
+    const [
+        saliendo,
+        setSaliendo,
+    ] = useState(false);
+
+    const streamRef = useRef(null);
+    const audioContextRef = useRef(null);
+    const analyserRef = useRef(null);
+    const animationRef = useRef(null);
 
 
-    const status = useMemo(() => {
-        if (progress < 18) {
-            return "Activando núcleo acústico";
+    const datos = useMemo(() => {
+        const estado =
+            estadoModelo || {};
+
+        const respuestaMetricas =
+            metricasModelo || {};
+
+        const bloque =
+            respuestaMetricas.metricas ||
+            estado.metricas ||
+            respuestaMetricas ||
+            {};
+
+        const clases =
+            Array.isArray(
+                respuestaMetricas.clases
+            )
+                ? respuestaMetricas.clases
+                : Array.isArray(
+                    estado.clases
+                )
+                    ? estado.clases
+                    : CLASES_BASE;
+
+        return {
+            disponible:
+                Boolean(
+                    estado.modelo_disponible ||
+                    estado.estado ===
+                    "entrenado"
+                ),
+
+            nombre:
+                respuestaMetricas.modelo ||
+                estado.modelo ||
+                "Clasificador acústico",
+
+            version:
+                respuestaMetricas.version ||
+                estado.version ||
+                "—",
+
+            accuracy:
+                bloque.accuracy,
+
+            precision:
+                bloque.precision_macro,
+
+            recall:
+                bloque.recall_macro,
+
+            f1:
+                bloque.f1_macro,
+
+            muestras:
+                respuestaMetricas
+                    .muestras_totales ??
+                estado.muestras_totales,
+
+            caracteristicas:
+                respuestaMetricas
+                    .caracteristicas ??
+                estado.caracteristicas,
+
+            clases,
+        };
+    }, [
+        estadoModelo,
+        metricasModelo,
+    ]);
+
+
+    async function comprobarBackend() {
+        setBackendEstado("cargando");
+        setErrorBackend("");
+
+        try {
+            const [
+                estadoResultado,
+                metricasResultado,
+            ] = await Promise.allSettled([
+                obtenerEstadoModelo(),
+                obtenerMetricasModelo(),
+            ]);
+
+            if (
+                estadoResultado.status ===
+                "rejected"
+            ) {
+                throw estadoResultado.reason;
+            }
+
+            setEstadoModelo(
+                estadoResultado.value
+            );
+
+            if (
+                metricasResultado.status ===
+                "fulfilled"
+            ) {
+                setMetricasModelo(
+                    metricasResultado.value
+                );
+            } else {
+                setMetricasModelo(null);
+            }
+
+            setBackendEstado("conectado");
+        } catch (error) {
+            setBackendEstado(
+                "desconectado"
+            );
+
+            setEstadoModelo(null);
+            setMetricasModelo(null);
+
+            setErrorBackend(
+                error?.response?.data?.detail ||
+                error?.message ||
+                "No fue posible conectar con Django."
+            );
         }
-
-        if (progress < 36) {
-            return "Abriendo canal de escucha";
-        }
-
-        if (progress < 56) {
-            return "Inicializando inteligencia artificial";
-        }
-
-        if (progress < 76) {
-            return "Interpretando señales del entorno";
-        }
-
-        if (progress < 94) {
-            return "Sincronizando respuesta inteligente";
-        }
-
-        return "Sistema preparado";
-    }, [progress]);
+    }
 
 
-    const hablar = () => {
-        if (!("speechSynthesis" in window)) {
+    function hablar() {
+        if (
+            !("speechSynthesis" in window)
+        ) {
             return;
         }
 
         window.speechSynthesis.cancel();
 
-        const utterance =
+        const mensaje =
             new SpeechSynthesisUtterance(
                 MENSAJE_BIENVENIDA
             );
 
-        utterance.lang = "es-ES";
+        mensaje.lang = "es-ES";
+        mensaje.rate = 1.03;
+        mensaje.pitch = 0.96;
+        mensaje.volume = 1;
 
-        /*
-          Si la voz termina demasiado tarde,
-          cambia rate a 1.20 o 1.25.
-        */
-        utterance.rate = 1.12;
-        utterance.pitch = 0.94;
-        utterance.volume = 1;
+        const voces =
+            window.speechSynthesis
+                .getVoices();
 
-
-        const voices =
-            window.speechSynthesis.getVoices();
-
-
-        const spanishVoice =
-            voices.find((voice) =>
-                voice.lang
+        const voz =
+            voces.find((item) =>
+                item.lang
                     ?.toLowerCase()
                     .startsWith("es")
             );
 
-
-        if (spanishVoice) {
-            utterance.voice = spanishVoice;
+        if (voz) {
+            mensaje.voice = voz;
         }
 
-
-        utterance.onstart = () => {
+        mensaje.onstart = () => {
             setSpeaking(true);
         };
 
-
-        utterance.onend = () => {
+        mensaje.onend = () => {
             setSpeaking(false);
         };
 
-
-        utterance.onerror = () => {
+        mensaje.onerror = () => {
             setSpeaking(false);
         };
-
 
         window.speechSynthesis.speak(
-            utterance
+            mensaje
         );
-    };
+    }
 
 
-    const detenerVoz = () => {
+    function detenerVoz() {
         if (
             "speechSynthesis" in window
         ) {
@@ -135,522 +349,876 @@ export default function SplashScreen() {
         }
 
         setSpeaking(false);
-    };
+    }
 
 
-    const entrar = () => {
-        if (closing) {
+    function detenerMicrofono() {
+        if (animationRef.current) {
+            cancelAnimationFrame(
+                animationRef.current
+            );
+
+            animationRef.current = null;
+        }
+
+        if (streamRef.current) {
+            streamRef.current
+                .getTracks()
+                .forEach((track) =>
+                    track.stop()
+                );
+
+            streamRef.current = null;
+        }
+
+        if (audioContextRef.current) {
+            audioContextRef.current
+                .close()
+                .catch(() => { });
+
+            audioContextRef.current = null;
+        }
+
+        analyserRef.current = null;
+
+        setMicEstado("apagado");
+        setNivelMic(0);
+        setBarras(
+            Array(NUMERO_BARRAS).fill(4)
+        );
+    }
+
+
+    async function activarMicrofono() {
+        if (
+            micEstado === "activo"
+        ) {
+            detenerMicrofono();
             return;
         }
 
+        setMicEstado("solicitando");
+
+        try {
+            const stream =
+                await navigator.mediaDevices
+                    .getUserMedia({
+                        audio: {
+                            channelCount: 1,
+                            echoCancellation: false,
+                            noiseSuppression: false,
+                            autoGainControl: false,
+                        },
+                    });
+
+            const AudioContextClass =
+                window.AudioContext ||
+                window.webkitAudioContext;
+
+            if (!AudioContextClass) {
+                throw new Error(
+                    "AudioContext no está disponible."
+                );
+            }
+
+            const contexto =
+                new AudioContextClass();
+
+            if (
+                contexto.state ===
+                "suspended"
+            ) {
+                await contexto.resume();
+            }
+
+            const fuente =
+                contexto
+                    .createMediaStreamSource(
+                        stream
+                    );
+
+            const analyser =
+                contexto.createAnalyser();
+
+            analyser.fftSize = 256;
+            analyser.smoothingTimeConstant =
+                0.78;
+
+            fuente.connect(analyser);
+
+            streamRef.current = stream;
+            audioContextRef.current =
+                contexto;
+            analyserRef.current =
+                analyser;
+
+            const datosFrecuencia =
+                new Uint8Array(
+                    analyser
+                        .frequencyBinCount
+                );
+
+            const actualizar =
+                () => {
+                    if (
+                        !analyserRef.current
+                    ) {
+                        return;
+                    }
+
+                    analyserRef.current
+                        .getByteFrequencyData(
+                            datosFrecuencia
+                        );
+
+                    const paso =
+                        Math.max(
+                            1,
+                            Math.floor(
+                                datosFrecuencia
+                                    .length /
+                                NUMERO_BARRAS
+                            )
+                        );
+
+                    const nuevasBarras =
+                        Array.from(
+                            {
+                                length:
+                                    NUMERO_BARRAS,
+                            },
+                            (_, indice) => {
+                                const inicio =
+                                    indice *
+                                    paso;
+
+                                const fin =
+                                    Math.min(
+                                        inicio +
+                                        paso,
+                                        datosFrecuencia
+                                            .length
+                                    );
+
+                                let suma = 0;
+
+                                for (
+                                    let i =
+                                        inicio;
+                                    i < fin;
+                                    i++
+                                ) {
+                                    suma +=
+                                        datosFrecuencia[
+                                        i
+                                        ];
+                                }
+
+                                const promedio =
+                                    suma /
+                                    Math.max(
+                                        1,
+                                        fin -
+                                        inicio
+                                    );
+
+                                return Math.max(
+                                    4,
+                                    Math.min(
+                                        100,
+                                        (
+                                            promedio /
+                                            255
+                                        ) *
+                                        100 *
+                                        1.8
+                                    )
+                                );
+                            }
+                        );
+
+                    const promedioGeneral =
+                        datosFrecuencia.reduce(
+                            (
+                                total,
+                                valor
+                            ) =>
+                                total +
+                                valor,
+                            0
+                        ) /
+                        datosFrecuencia
+                            .length;
+
+                    setBarras(
+                        nuevasBarras
+                    );
+
+                    setNivelMic(
+                        Math.min(
+                            100,
+                            (
+                                promedioGeneral /
+                                255
+                            ) *
+                            100 *
+                            2.1
+                        )
+                    );
+
+                    animationRef.current =
+                        requestAnimationFrame(
+                            actualizar
+                        );
+                };
+
+            setMicEstado("activo");
+
+            actualizar();
+        } catch (error) {
+            setMicEstado("error");
+            setNivelMic(0);
+        }
+    }
+
+
+    function entrar() {
+        if (saliendo) {
+            return;
+        }
+
+        setSaliendo(true);
         detenerVoz();
+        detenerMicrofono();
 
-        setClosing(true);
-
-        setTimeout(() => {
+        window.setTimeout(() => {
             navigate("/login", {
                 replace: true,
             });
-        }, 800);
-    };
+        }, 700);
+    }
 
 
-    /*
-      VOZ
-    */
     useEffect(() => {
-        const iniciar = () => {
-            if (voiceStarted.current) {
-                return;
-            }
+        comprobarBackend();
 
-            voiceStarted.current = true;
-
-            hablar();
-        };
-
-
-        const timer =
-            setTimeout(iniciar, 650);
-
-
-        if (
-            "speechSynthesis" in window
-        ) {
-            window.speechSynthesis.addEventListener(
-                "voiceschanged",
-                iniciar
+        const reloj =
+            window.setInterval(
+                () => {
+                    setAhora(new Date());
+                },
+                1000
             );
-        }
 
+        const backendIntervalo =
+            window.setInterval(
+                comprobarBackend,
+                15000
+            );
 
         return () => {
-            clearTimeout(timer);
+            window.clearInterval(
+                reloj
+            );
 
-            if (
-                "speechSynthesis" in window
-            ) {
-                window.speechSynthesis.removeEventListener(
-                    "voiceschanged",
-                    iniciar
-                );
+            window.clearInterval(
+                backendIntervalo
+            );
 
-                window.speechSynthesis.cancel();
-            }
+            detenerVoz();
+            detenerMicrofono();
         };
     }, []);
 
 
-    /*
-      PROGRESO
-    */
-    useEffect(() => {
-        const start = Date.now();
-
-
-        const interval =
-            setInterval(() => {
-                const elapsed =
-                    Date.now() - start;
-
-                const value =
-                    Math.min(
-                        100,
-                        (elapsed / DURACION) * 100
-                    );
-
-                setProgress(value);
-            }, 60);
-
-
-        const timer =
-            setTimeout(() => {
-                detenerVoz();
-
-                setClosing(true);
-
-                setTimeout(() => {
-                    navigate("/login", {
-                        replace: true,
-                    });
-                }, 800);
-
-            }, DURACION);
-
-
-        return () => {
-            clearInterval(interval);
-            clearTimeout(timer);
-        };
-    }, [navigate]);
-
-
     return (
         <div
-            className={`nova ${closing
-                ? "nova--closing"
-                : ""
+            className={`sg-c ${saliendo
+                    ? "sg-c--leaving"
+                    : ""
                 }`}
-            style={{
-                "--progress": progress,
-            }}
         >
+            <div className="sg-c__noise" />
+            <div className="sg-c__grid" />
+            <div className="sg-c__aura sg-c__aura--a" />
+            <div className="sg-c__aura sg-c__aura--b" />
 
-            {/* FONDO */}
-
-            <div className="nova__noise" />
-            <div className="nova__grid" />
-            <div className="nova__glow nova__glow--a" />
-            <div className="nova__glow nova__glow--b" />
-
-
-            {/* CABECERA */}
-
-            <header className="nova__header">
-
-                <div className="nova__identity">
-
-                    <div className="nova__monogram">
-                        SG
+            <header className="sg-c__header">
+                <div className="sg-c__brand">
+                    <div className="sg-c__brandMark">
+                        <AudioWaveform
+                            size={22}
+                            strokeWidth={1.75}
+                        />
                     </div>
 
                     <div>
                         <strong>
-                            SOUNDGUARD AI
+                            SOUNDGUARD
                         </strong>
 
                         <span>
-                            INTELLIGENT SOUND SYSTEM
+                            SISTEMA DE DETECCIÓN
+                            ACÚSTICA
                         </span>
                     </div>
-
                 </div>
 
+                <div className="sg-c__headerRight">
+                    <div className="sg-c__dateBlock">
+                        <Calendar
+                            size={14}
+                        />
 
-                <div className="nova__online">
-
-                    <i />
-
-                    <span>
-                        CORE ONLINE
-                    </span>
-
-                </div>
-
-            </header>
-
-
-            {/* CONTENIDO */}
-
-            <main className="nova__main">
-
-                {/* TEXTO */}
-
-                <section className="nova__copy">
-
-                    <div className="nova__kicker">
-
-                        <Sparkles size={13} />
-
-                        <span>
-                            EL SONIDO TAMBIÉN PUEDE HABLAR
-                        </span>
-
-                    </div>
-
-
-                    <h1>
-                        Escuchar
-                        <span>
-                            ya no es suficiente.
-                        </span>
-                    </h1>
-
-
-                    <h2>
-                        Bienvenido a nuestro
-                        <strong>
-                            sistema inteligente de
-                            detección de sonidos.
-                        </strong>
-                    </h2>
-
-
-                    <p className="nova__lead">
-                        Imagina una inteligencia capaz
-                        de escuchar lo que sucede a tu
-                        alrededor, reconocer cuándo un
-                        sonido merece atención y
-                        transformarlo en información
-                        que puedas comprender.
-                    </p>
-
-
-                    <div className="nova__quote">
-
-                        <span className="nova__quote-line" />
-
-                        <p>
-                            Porque detrás de un golpe,
-                            una alarma o una ruptura
-                            puede existir una historia
-                            que merece ser escuchada.
-                        </p>
-
-                    </div>
-
-
-                    {/* CAPACIDADES */}
-
-                    <div className="nova__features">
-
-                        <article>
-
-                            <span className="nova__feature-number">
-                                01
+                        <div>
+                            <span>
+                                {formatearFecha(
+                                    ahora
+                                )}
                             </span>
 
-                            <Waves size={19} />
-
-                            <div>
-                                <strong>
-                                    Escucha
-                                </strong>
-
-                                <small>
-                                    Captura el entorno acústico
-                                </small>
-                            </div>
-
-                        </article>
-
-
-                        <article>
-
-                            <span className="nova__feature-number">
-                                02
-                            </span>
-
-                            <BrainCircuit size={19} />
-
-                            <div>
-                                <strong>
-                                    Comprende
-                                </strong>
-
-                                <small>
-                                    Interpreta mediante IA
-                                </small>
-                            </div>
-
-                        </article>
-
-
-                        <article>
-
-                            <span className="nova__feature-number">
-                                03
-                            </span>
-
-                            <ShieldCheck size={19} />
-
-                            <div>
-                                <strong>
-                                    Responde
-                                </strong>
-
-                                <small>
-                                    Convierte sonido en eventos
-                                </small>
-                            </div>
-
-                        </article>
-
-                    </div>
-
-                </section>
-
-
-                {/* NÚCLEO SONORO */}
-
-                <section className="nova__sonic">
-
-                    <div className="sonic">
-
-                        <div className="sonic__halo" />
-
-                        <div className="sonic__ring sonic__ring--1" />
-
-                        <div className="sonic__ring sonic__ring--2">
-                            <i />
-                        </div>
-
-                        <div className="sonic__ring sonic__ring--3">
-                            <i />
-                        </div>
-
-
-                        <div className="sonic__scanner" />
-
-
-                        <div className="sonic__pulse sonic__pulse--1" />
-                        <div className="sonic__pulse sonic__pulse--2" />
-
-
-                        <div className="sonic__wave sonic__wave--left">
-
-                            <i />
-                            <i />
-                            <i />
-                            <i />
-                            <i />
-                            <i />
-                            <i />
-
-                        </div>
-
-
-                        <div className="sonic__core">
-
-                            <div className="sonic__core-inner">
-
-                                <div className="sonic__core-glow" />
-
-                                <Mic2
-                                    size={64}
-                                    strokeWidth={1.35}
+                            <strong>
+                                <Clock
+                                    size={13}
                                 />
-
-                            </div>
-
-                        </div>
-
-
-                        <div className="sonic__wave sonic__wave--right">
-
-                            <i />
-                            <i />
-                            <i />
-                            <i />
-                            <i />
-                            <i />
-                            <i />
-
-                        </div>
-
-
-                        <div className="sonic__label">
-
-                            <span>
-                                ACOUSTIC CORE
-                            </span>
-
-                            <strong>
-                                {speaking
-                                    ? "COMUNICANDO"
-                                    : "ESCUCHANDO"}
+                                {formatearHora(
+                                    ahora
+                                )}
                             </strong>
-
                         </div>
-
                     </div>
 
+                    <div
+                        className={`sg-c__backend sg-c__backend--${backendEstado}`}
+                    >
+                        <span className="sg-c__backendDot" />
 
-                    {/* ESTADO */}
-
-                    <div className="nova__status">
-
-                        <div className="nova__status-row">
-
-                            <span>
-                                {status}
-                            </span>
+                        <div>
+                            <small>
+                                DJANGO API
+                            </small>
 
                             <strong>
-                                {Math.round(progress)}
-                                <small>%</small>
+                                {backendEstado ===
+                                    "conectado"
+                                    ? "Conectado"
+                                    : backendEstado ===
+                                        "cargando"
+                                        ? "Verificando"
+                                        : "Sin conexión"}
                             </strong>
-
                         </div>
-
-
-                        <div className="nova__progress">
-
-                            <div
-                                className="nova__progress-fill"
-                                style={{
-                                    width:
-                                        `${progress}%`,
-                                }}
-                            />
-
-                            <div
-                                className="nova__progress-dot"
-                                style={{
-                                    left:
-                                        `${progress}%`,
-                                }}
-                            />
-
-                        </div>
-
-
-                        <div className="nova__stages">
-
-                            <span>
-                                SENSOR
-                            </span>
-
-                            <span>
-                                AUDIO
-                            </span>
-
-                            <span>
-                                IA
-                            </span>
-
-                            <span>
-                                ANÁLISIS
-                            </span>
-
-                            <span>
-                                READY
-                            </span>
-
-                        </div>
-
-                    </div>
-
-
-                    {/* BOTONES */}
-
-                    <div className="nova__actions">
 
                         <button
                             type="button"
-                            className="nova__voice"
+                            onClick={
+                                comprobarBackend
+                            }
+                            title="Actualizar estado"
+                        >
+                            <RefreshCw
+                                size={14}
+                            />
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+
+            <main className="sg-c__main">
+                <section className="sg-c__hero">
+                    <div className="sg-c__eyebrow">
+                        <span />
+
+                        <strong>
+                            INGENIERÍA DE SOFTWARE
+                            + AUDIO + ML
+                        </strong>
+                    </div>
+
+                    <h1>
+                        Sound
+                        <span>
+                            Guard
+                        </span>
+                    </h1>
+
+                    <h2>
+                        El entorno habla.
+                        Nosotros lo convertimos
+                        en información.
+                    </h2>
+
+                    <p className="sg-c__description">
+                        SoundGuard captura audio
+                        desde el navegador,
+                        prepara la señal,
+                        ejecuta el modelo de
+                        clasificación y registra
+                        cada evento acústico en
+                        el backend.
+                    </p>
+
+                    <div className="sg-c__actions">
+                        <button
+                            type="button"
+                            className="sg-c__primary"
+                            onClick={entrar}
+                        >
+                            <span>
+                                Entrar al sistema
+                            </span>
+
+                            <ArrowRight
+                                size={18}
+                            />
+                        </button>
+
+                        <button
+                            type="button"
+                            className="sg-c__secondary"
                             onClick={
                                 speaking
                                     ? detenerVoz
                                     : hablar
                             }
                         >
-
                             {speaking
-                                ? <VolumeX size={16} />
-                                : <Volume2 size={16} />
-                            }
+                                ? (
+                                    <VolumeX
+                                        size={17}
+                                    />
+                                )
+                                : (
+                                    <Volume2
+                                        size={17}
+                                    />
+                                )}
 
                             <span>
                                 {speaking
                                     ? "Silenciar"
-                                    : "Escuchar bienvenida"}
+                                    : "Presentación"}
                             </span>
-
                         </button>
-
-
-                        <button
-                            type="button"
-                            className="nova__enter"
-                            onClick={entrar}
-                        >
-
-                            Entrar
-
-                            <ArrowRight size={16} />
-
-                        </button>
-
                     </div>
 
+                    <div className="sg-c__team">
+                        <div>
+                            <span>
+                                EQUIPO
+                            </span>
+
+                            <strong>
+                                {EQUIPO.join(
+                                    " · "
+                                )}
+                            </strong>
+                        </div>
+
+                        <div>
+                            <span>
+                                LIDERAZGO
+                            </span>
+
+                            <strong>
+                                Coronel Leonzo Prado
+                            </strong>
+                        </div>
+                    </div>
                 </section>
 
+
+                <section className="sg-c__workspace">
+                    <div className="sg-c__workspaceHeader">
+                        <div>
+                            <span>
+                                CENTRO DE MONITOREO
+                            </span>
+
+                            <strong>
+                                Estado operativo
+                            </strong>
+                        </div>
+
+                        <ShieldCheck
+                            size={21}
+                        />
+                    </div>
+
+
+                    <div className="sg-c__signal">
+                        <div className="sg-c__signalHead">
+                            <div>
+                                <span>
+                                    SEÑAL DEL MICRÓFONO
+                                </span>
+
+                                <strong>
+                                    {micEstado ===
+                                        "activo"
+                                        ? "Captura en tiempo real"
+                                        : micEstado ===
+                                            "solicitando"
+                                            ? "Solicitando permiso..."
+                                            : micEstado ===
+                                                "error"
+                                                ? "Permiso no disponible"
+                                                : "Micrófono inactivo"}
+                                </strong>
+                            </div>
+
+                            <button
+                                type="button"
+                                className={`sg-c__micButton ${micEstado ===
+                                        "activo"
+                                        ? "is-active"
+                                        : ""
+                                    }`}
+                                onClick={
+                                    activarMicrofono
+                                }
+                            >
+                                <Mic2
+                                    size={16}
+                                />
+
+                                <span>
+                                    {micEstado ===
+                                        "activo"
+                                        ? "Detener"
+                                        : "Activar micrófono"}
+                                </span>
+                            </button>
+                        </div>
+
+                        <div className="sg-c__bars">
+                            {barras.map(
+                                (
+                                    valor,
+                                    indice
+                                ) => (
+                                    <i
+                                        key={indice}
+                                        style={{
+                                            height:
+                                                `${valor}%`,
+                                        }}
+                                    />
+                                )
+                            )}
+                        </div>
+
+                        <div className="sg-c__signalFooter">
+                            <span>
+                                Nivel
+                                {" "}
+                                {nivelMic.toFixed(
+                                    0
+                                )}
+                                %
+                            </span>
+
+                            <span>
+                                22.05 kHz
+                            </span>
+
+                            <span>
+                                Mono
+                            </span>
+
+                            <span>
+                                Ventana de análisis:
+                                3 s
+                            </span>
+                        </div>
+                    </div>
+
+
+                    <div className="sg-c__statusGrid">
+                        <article>
+                            <div className="sg-c__statusIcon">
+                                <Server
+                                    size={18}
+                                />
+                            </div>
+
+                            <span>
+                                Backend
+                            </span>
+
+                            <strong
+                                className={
+                                    backendEstado ===
+                                        "conectado"
+                                        ? "is-ok"
+                                        : backendEstado ===
+                                            "desconectado"
+                                            ? "is-bad"
+                                            : ""
+                                }
+                            >
+                                {backendEstado ===
+                                    "conectado"
+                                    ? "Django conectado"
+                                    : backendEstado ===
+                                        "cargando"
+                                        ? "Verificando..."
+                                        : "No disponible"}
+                            </strong>
+                        </article>
+
+                        <article>
+                            <div className="sg-c__statusIcon">
+                                <BrainCircuit
+                                    size={18}
+                                />
+                            </div>
+
+                            <span>
+                                Modelo
+                            </span>
+
+                            <strong
+                                className={
+                                    datos.disponible
+                                        ? "is-ok"
+                                        : ""
+                                }
+                            >
+                                {datos.disponible
+                                    ? "Disponible"
+                                    : "No disponible"}
+                            </strong>
+                        </article>
+
+                        <article>
+                            <div className="sg-c__statusIcon">
+                                <Activity
+                                    size={18}
+                                />
+                            </div>
+
+                            <span>
+                                Accuracy
+                            </span>
+
+                            <strong>
+                                {porcentaje(
+                                    datos.accuracy
+                                )}
+                            </strong>
+                        </article>
+
+                        <article>
+                            <div className="sg-c__statusIcon">
+                                <Database
+                                    size={18}
+                                />
+                            </div>
+
+                            <span>
+                                Dataset
+                            </span>
+
+                            <strong>
+                                {datos.muestras
+                                    ? `${datos.muestras} muestras`
+                                    : "—"}
+                            </strong>
+                        </article>
+                    </div>
+
+
+                    <div className="sg-c__pipeline">
+                        <div className="sg-c__sectionTitle">
+                            <span>
+                                FLUJO REAL
+                            </span>
+
+                            <small>
+                                navegador → backend
+                            </small>
+                        </div>
+
+                        <div className="sg-c__pipelineGrid">
+                            <article>
+                                <Mic2
+                                    size={19}
+                                />
+
+                                <strong>
+                                    Captura
+                                </strong>
+
+                                <span>
+                                    Audio desde el
+                                    navegador
+                                </span>
+                            </article>
+
+                            <article>
+                                <AudioWaveform
+                                    size={19}
+                                />
+
+                                <strong>
+                                    Prepara
+                                </strong>
+
+                                <span>
+                                    WAV · mono ·
+                                    22.05 kHz
+                                </span>
+                            </article>
+
+                            <article>
+                                <BrainCircuit
+                                    size={19}
+                                />
+
+                                <strong>
+                                    Clasifica
+                                </strong>
+
+                                <span>
+                                    Probabilidad por
+                                    clase
+                                </span>
+                            </article>
+
+                            <article>
+                                <Database
+                                    size={19}
+                                />
+
+                                <strong>
+                                    Registra
+                                </strong>
+
+                                <span>
+                                    Django y
+                                    PostgreSQL
+                                </span>
+                            </article>
+                        </div>
+                    </div>
+
+
+                    <div className="sg-c__model">
+                        <div className="sg-c__sectionTitle">
+                            <span>
+                                MODELO ACTUAL
+                            </span>
+
+                            <small>
+                                datos del backend
+                            </small>
+                        </div>
+
+                        <div className="sg-c__modelTop">
+                            <div>
+                                <h3>
+                                    {datos.nombre}
+                                </h3>
+
+                                <p>
+                                    Versión
+                                    {" "}
+                                    <b>
+                                        {datos.version}
+                                    </b>
+                                    {" · "}
+                                    {datos.caracteristicas ??
+                                        "—"}
+                                    {" "}
+                                    características
+                                </p>
+                            </div>
+
+                            <div className="sg-c__metrics">
+                                <div>
+                                    <span>
+                                        Precision
+                                    </span>
+
+                                    <strong>
+                                        {porcentaje(
+                                            datos.precision
+                                        )}
+                                    </strong>
+                                </div>
+
+                                <div>
+                                    <span>
+                                        Recall
+                                    </span>
+
+                                    <strong>
+                                        {porcentaje(
+                                            datos.recall
+                                        )}
+                                    </strong>
+                                </div>
+
+                                <div>
+                                    <span>
+                                        F1
+                                    </span>
+
+                                    <strong>
+                                        {porcentaje(
+                                            datos.f1
+                                        )}
+                                    </strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="sg-c__classes">
+                            {datos.clases.map(
+                                (clase) => (
+                                    <span
+                                        key={clase}
+                                    >
+                                        {nombreClase(
+                                            clase
+                                        )}
+                                    </span>
+                                )
+                            )}
+                        </div>
+
+                        {errorBackend && (
+                            <div className="sg-c__error">
+                                <strong>
+                                    Backend no disponible
+                                </strong>
+
+                                <span>
+                                    Verifica que
+                                    Django esté
+                                    ejecutándose en
+                                    http://127.0.0.1:8000
+                                </span>
+                            </div>
+                        )}
+                    </div>
+                </section>
             </main>
 
 
-            {/* PIE */}
-
-            <footer className="nova__footer">
-
+            <footer className="sg-c__footer">
                 <span>
-                    ESCUCHA
+                    SOUNDGUARD · 2026
                 </span>
 
-                <i />
-
                 <span>
-                    ANALIZA
+                    React · Django · PostgreSQL
+                    · procesamiento de audio ·
+                    aprendizaje automático
                 </span>
-
-                <i />
-
-                <span>
-                    PROTEGE
-                </span>
-
             </footer>
-
         </div>
     );
 }

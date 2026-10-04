@@ -600,29 +600,50 @@ export default function AdminDashboard() {
         }, [detecciones]);
 
 
-    const ultimoEvento =
-        historialOrdenado[0] || null;
-
-
     /* ===================================================
        RESULTADO / DETECCIÓN ACTUAL
     =================================================== */
 
     const sonidoActual =
         resultado?.tipo_sonido ||
-        ultimoEvento?.tipo_sonido ||
+        null;
+
+
+    const claseModeloActual =
+        resultado?.clase_modelo ||
         null;
 
 
     const confianzaActual =
         resultado?.confianza ??
-        ultimoEvento?.confianza ??
         0;
+
+
+    const umbralActual =
+        resultado?.umbral_desconocido ??
+        estadoModelo?.umbral_desconocido ??
+        0.55;
+
+
+    const esDesconocido =
+        Boolean(
+            resultado &&
+            resultado?.tipo_sonido ===
+            "desconocido"
+        );
+
+
+    const prediccionConfirmada =
+        Boolean(
+            resultado &&
+            resultado?.tipo_sonido &&
+            resultado?.tipo_sonido !==
+            "desconocido"
+        );
 
 
     const riesgoActual =
         resultado?.nivel_riesgo ||
-        ultimoEvento?.nivel_riesgo ||
         "bajo";
 
 
@@ -691,8 +712,33 @@ export default function AdminDashboard() {
             datos?.tipo_sonido ===
             "desconocido"
         ) {
+            const candidata =
+                nombreSonido(
+                    datos?.clase_modelo
+                );
+
+            const confianza =
+                Math.round(
+                    porcentaje(
+                        datos?.confianza
+                    )
+                );
+
+            const umbral =
+                Math.round(
+                    porcentaje(
+                        datos?.umbral_desconocido ??
+                        0.55
+                    )
+                );
+
             texto =
-                "No se pudo identificar el sonido con suficiente confianza.";
+                datos?.clase_modelo
+                    ? `El sonido no fue confirmado. ` +
+                    `La mejor coincidencia del modelo es ${candidata}, ` +
+                    `con una confianza de ${confianza} por ciento. ` +
+                    `El umbral requerido es ${umbral} por ciento.`
+                    : "No se pudo identificar el sonido con suficiente confianza.";
         } else {
             texto =
                 `Se ha detectado ${nombreSonido(
@@ -918,7 +964,7 @@ export default function AdminDashboard() {
                             >
                                 <Sparkles size={12} />
 
-                                SoundGuard Intelligence Core
+                                Monitoreo acústico · Django + ML
                             </div>
 
 
@@ -932,9 +978,9 @@ export default function AdminDashboard() {
                   md:text-3xl
                 "
                             >
-                                Tu backend ahora tiene una
-                                interfaz que muestra lo que
-                                realmente está ocurriendo.
+                                Monitoreo acústico conectado
+                                al clasificador real de
+                                SoundGuard.
                             </h2>
 
 
@@ -1335,7 +1381,9 @@ export default function AdminDashboard() {
                     text-emerald-300
                   "
                                 >
-                                    MIC ONLINE
+                                    {escuchando
+                                        ? "CAPTURANDO"
+                                        : "MICRÓFONO"}
                                 </span>
 
                             </div>
@@ -1835,6 +1883,185 @@ export default function AdminDashboard() {
                                                     }}
                                                 />
                                             </div>
+
+
+                                            {resultado &&
+                                                esDesconocido &&
+                                                claseModeloActual && (
+                                                    <div
+                                                        className="
+                              mt-5
+                              rounded-xl
+                              border
+                              border-amber-400/20
+                              bg-amber-400/[0.05]
+                              p-4
+                            "
+                                                    >
+                                                        <div
+                                                            className="
+                                flex
+                                items-center
+                                justify-between
+                                gap-3
+                              "
+                                                        >
+                                                            <span
+                                                                className="
+                                  text-[8px]
+                                  font-semibold
+                                  uppercase
+                                  tracking-[0.15em]
+                                  text-amber-300
+                                "
+                                                            >
+                                                                Predicción no confirmada
+                                                            </span>
+
+                                                            <span
+                                                                className="
+                                  rounded-full
+                                  border
+                                  border-amber-400/20
+                                  bg-amber-400/[0.06]
+                                  px-2.5
+                                  py-1
+                                  text-[8px]
+                                  font-semibold
+                                  text-amber-200
+                                "
+                                                            >
+                                                                {porcentajeTexto(
+                                                                    confianzaActual
+                                                                )}
+                                                                {" < "}
+                                                                {porcentajeTexto(
+                                                                    umbralActual
+                                                                )}
+                                                            </span>
+                                                        </div>
+
+                                                        <div
+                                                            className="
+                                mt-3
+                                flex
+                                items-end
+                                justify-between
+                                gap-3
+                              "
+                                                        >
+                                                            <div>
+                                                                <span
+                                                                    className="
+                                    block
+                                    text-[8px]
+                                    uppercase
+                                    tracking-[0.14em]
+                                    text-slate-600
+                                  "
+                                                                >
+                                                                    Mejor coincidencia
+                                                                    del modelo
+                                                                </span>
+
+                                                                <strong
+                                                                    className="
+                                    mt-1
+                                    block
+                                    text-lg
+                                    font-semibold
+                                    text-white
+                                  "
+                                                                >
+                                                                    {nombreSonido(
+                                                                        claseModeloActual
+                                                                    )}
+                                                                </strong>
+                                                            </div>
+
+                                                            <BrainCircuit
+                                                                size={20}
+                                                                className="
+                                  shrink-0
+                                  text-amber-300
+                                "
+                                                            />
+                                                        </div>
+
+                                                        <p
+                                                            className="
+                                mt-3
+                                text-[9px]
+                                leading-5
+                                text-slate-500
+                              "
+                                                        >
+                                                            El backend sí encontró una
+                                                            clase principal, pero su
+                                                            confianza no alcanzó el
+                                                            umbral mínimo de{" "}
+                                                            {porcentajeTexto(
+                                                                umbralActual
+                                                            )}. Por eso el resultado
+                                                            confirmado permanece como
+                                                            Desconocido.
+                                                        </p>
+                                                    </div>
+                                                )}
+
+
+                                            {resultado &&
+                                                prediccionConfirmada && (
+                                                    <div
+                                                        className="
+                              mt-5
+                              flex
+                              items-center
+                              gap-2
+                              rounded-xl
+                              border
+                              border-emerald-400/20
+                              bg-emerald-400/[0.05]
+                              p-3
+                            "
+                                                    >
+                                                        <ShieldCheck
+                                                            size={15}
+                                                            className="
+                                shrink-0
+                                text-emerald-300
+                              "
+                                                        />
+
+                                                        <div>
+                                                            <strong
+                                                                className="
+                                  block
+                                  text-[9px]
+                                  font-semibold
+                                  text-emerald-200
+                                "
+                                                            >
+                                                                Predicción confirmada
+                                                            </strong>
+
+                                                            <span
+                                                                className="
+                                  mt-0.5
+                                  block
+                                  text-[8px]
+                                  text-emerald-300/60
+                                "
+                                                            >
+                                                                La clase superó el
+                                                                umbral de{" "}
+                                                                {porcentajeTexto(
+                                                                    umbralActual
+                                                                )}.
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                )}
 
 
                                             {resultado && (

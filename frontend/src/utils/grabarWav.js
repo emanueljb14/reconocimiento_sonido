@@ -1,14 +1,15 @@
-const FRECUENCIA_DESTINO = 22050;
-
-
 function combinarBuffers(buffers) {
-    const longitudTotal = buffers.reduce(
-        (total, buffer) => total + buffer.length,
-        0
-    );
+    const longitudTotal =
+        buffers.reduce(
+            (total, buffer) =>
+                total + buffer.length,
+            0
+        );
 
     const resultado =
-        new Float32Array(longitudTotal);
+        new Float32Array(
+            longitudTotal
+        );
 
     let posicion = 0;
 
@@ -18,68 +19,42 @@ function combinarBuffers(buffers) {
             posicion
         );
 
-        posicion += buffer.length;
+        posicion +=
+            buffer.length;
     }
 
     return resultado;
 }
 
 
-function remuestrear(
+function ajustarLongitud(
     audio,
-    frecuenciaOriginal,
-    frecuenciaDestino
+    longitudObjetivo
 ) {
     if (
-        frecuenciaOriginal ===
-        frecuenciaDestino
+        audio.length ===
+        longitudObjetivo
     ) {
         return audio;
     }
 
-    const relacion =
-        frecuenciaOriginal /
-        frecuenciaDestino;
-
-    const nuevaLongitud =
-        Math.round(
-            audio.length / relacion
-        );
-
     const resultado =
         new Float32Array(
-            nuevaLongitud
+            longitudObjetivo
         );
 
-    for (
-        let i = 0;
-        i < nuevaLongitud;
-        i++
-    ) {
-        const posicionOriginal =
-            i * relacion;
+    const cantidad =
+        Math.min(
+            audio.length,
+            longitudObjetivo
+        );
 
-        const indiceInferior =
-            Math.floor(
-                posicionOriginal
-            );
-
-        const indiceSuperior =
-            Math.min(
-                indiceInferior + 1,
-                audio.length - 1
-            );
-
-        const fraccion =
-            posicionOriginal -
-            indiceInferior;
-
-        resultado[i] =
-            audio[indiceInferior] *
-            (1 - fraccion) +
-            audio[indiceSuperior] *
-            fraccion;
-    }
+    resultado.set(
+        audio.subarray(
+            0,
+            cantidad
+        )
+    );
 
     return resultado;
 }
@@ -108,8 +83,12 @@ function crearWav(
     sampleRate
 ) {
     const canales = 1;
-    const bitsPorMuestra = 16;
-    const bytesPorMuestra = 2;
+
+    const bitsPorMuestra =
+        16;
+
+    const bytesPorMuestra =
+        bitsPorMuestra / 8;
 
     const tamanoDatos =
         audio.length *
@@ -117,11 +96,14 @@ function crearWav(
 
     const buffer =
         new ArrayBuffer(
-            44 + tamanoDatos
+            44 +
+            tamanoDatos
         );
 
     const view =
-        new DataView(buffer);
+        new DataView(
+            buffer
+        );
 
 
     escribirTexto(
@@ -246,43 +228,13 @@ function crearWav(
 }
 
 
-function descargarWav(wav) {
-    const url =
-        URL.createObjectURL(wav);
-
-    const enlace =
-        document.createElement("a");
-
-    enlace.href = url;
-
-    enlace.download =
-        `prueba_microfono_${Date.now()}.wav`;
-
-    document.body.appendChild(
-        enlace
-    );
-
-    enlace.click();
-
-    enlace.remove();
-
-    setTimeout(
-        () => {
-            URL.revokeObjectURL(
-                url
-            );
-        },
-        1000
-    );
-}
-
-
 export async function grabarWav(
     duracionSegundos = 3
 ) {
     if (
         !navigator.mediaDevices ||
-        !navigator.mediaDevices.getUserMedia
+        !navigator.mediaDevices
+            .getUserMedia
     ) {
         throw new Error(
             "El navegador no permite acceder al micrófono."
@@ -291,17 +243,41 @@ export async function grabarWav(
 
 
     const stream =
-        await navigator.mediaDevices.getUserMedia({
-            audio: {
-                channelCount: 1,
+        await navigator
+            .mediaDevices
+            .getUserMedia({
+                audio: {
+                    channelCount: 1,
 
-                echoCancellation: false,
+                    echoCancellation:
+                        false,
 
-                noiseSuppression: false,
+                    noiseSuppression:
+                        false,
 
-                autoGainControl: false,
-            },
-        });
+                    autoGainControl:
+                        false,
+                },
+            });
+
+
+    const pista =
+        stream
+            .getAudioTracks()[0];
+
+
+    /*
+        IMPORTANTE:
+        Esto muestra lo que Chrome
+        realmente está usando.
+    */
+    console.log(
+        "Configuración real del micrófono:"
+    );
+
+    console.table(
+        pista.getSettings()
+    );
 
 
     const AudioContextClass =
@@ -318,7 +294,7 @@ export async function grabarWav(
             );
 
         throw new Error(
-            "AudioContext no está disponible en este navegador."
+            "AudioContext no está disponible."
         );
     }
 
@@ -335,38 +311,75 @@ export async function grabarWav(
     }
 
 
-    const frecuenciaOriginal =
+    /*
+        NO forzamos 22050 aquí.
+
+        Dejamos que Chrome grabe
+        en la frecuencia real
+        del dispositivo.
+
+        Django/librosa hará
+        después el remuestreo
+        a 22050.
+    */
+    const frecuenciaReal =
         contexto.sampleRate;
 
 
+    console.log(
+        "Sample rate de AudioContext:",
+        frecuenciaReal
+    );
+
+
     const fuente =
-        contexto.createMediaStreamSource(
-            stream
-        );
+        contexto
+            .createMediaStreamSource(
+                stream
+            );
 
 
     const procesador =
-        contexto.createScriptProcessor(
-            4096,
-            1,
-            1
-        );
+        contexto
+            .createScriptProcessor(
+                4096,
+                1,
+                1
+            );
+
+
+    /*
+        Lo conectamos a un gain
+        en cero para mantener
+        activo el procesamiento
+        sin escuchar el micrófono
+        por los parlantes.
+    */
+    const silenciador =
+        contexto.createGain();
+
+    silenciador.gain.value =
+        0;
 
 
     const buffers = [];
 
 
-    procesador.onaudioprocess = (
-        evento
-    ) => {
-        const datos =
-            evento.inputBuffer
-                .getChannelData(0);
+    procesador.onaudioprocess =
+        (evento) => {
+            const datos =
+                evento
+                    .inputBuffer
+                    .getChannelData(
+                        0
+                    );
 
-        buffers.push(
-            new Float32Array(datos)
-        );
-    };
+            buffers.push(
+                new Float32Array(
+                    datos
+                )
+            );
+        };
 
 
     fuente.connect(
@@ -374,6 +387,10 @@ export async function grabarWav(
     );
 
     procesador.connect(
+        silenciador
+    );
+
+    silenciador.connect(
         contexto.destination
     );
 
@@ -390,8 +407,8 @@ export async function grabarWav(
         );
     } finally {
         procesador.disconnect();
-
         fuente.disconnect();
+        silenciador.disconnect();
 
         stream
             .getTracks()
@@ -399,16 +416,16 @@ export async function grabarWav(
                 (track) =>
                     track.stop()
             );
-
-        await contexto.close();
     }
 
 
     if (
         buffers.length === 0
     ) {
+        await contexto.close();
+
         throw new Error(
-            "No se pudo capturar audio."
+            "No se capturó audio."
         );
     }
 
@@ -419,24 +436,61 @@ export async function grabarWav(
         );
 
 
-    const audioRemuestreado =
-        remuestrear(
-            audioCompleto,
-            frecuenciaOriginal,
-            FRECUENCIA_DESTINO
+    /*
+        Dejamos EXACTAMENTE
+        la cantidad de muestras
+        correspondiente a 3 segundos.
+
+        Si Chrome produjo un poco
+        menos, rellena con cero.
+
+        Si produjo un poco más,
+        recorta.
+    */
+    const muestrasObjetivo =
+        Math.round(
+            frecuenciaReal *
+            duracionSegundos
         );
+
+
+    const audioExacto =
+        ajustarLongitud(
+            audioCompleto,
+            muestrasObjetivo
+        );
+
+
+    console.log(
+        "Duración enviada:",
+        (
+            audioExacto.length /
+            frecuenciaReal
+        ).toFixed(3),
+        "segundos"
+    );
+
+
+    console.log(
+        "Muestras enviadas:",
+        audioExacto.length
+    );
+
+
+    console.log(
+        "Frecuencia enviada:",
+        frecuenciaReal
+    );
 
 
     const wav =
         crearWav(
-            audioRemuestreado,
-            FRECUENCIA_DESTINO
+            audioExacto,
+            frecuenciaReal
         );
 
 
-    descargarWav(
-        wav
-    );
+    await contexto.close();
 
 
     return wav;

@@ -1,12 +1,18 @@
 {
     "estado": "entrenado",
-    "version": "20261002-020348",
-    "fecha_entrenamiento": "2026-10-02T02:03:48.952340+00:00",
+    "version": "20261003-160705",
+    "fecha_entrenamiento": "2026-10-03T16:07:05.351294+00:00",
     "modelo": "RandomForestClassifier",
     "scikit_learn": "1.9.1",
-    "muestras_totales": 300,
-    "muestras_entrenamiento": 240,
-    "muestras_prueba": 60,
+    "estrategia_validacion": "holdout_agrupado_80_20",
+    "descripcion_validacion": "El audio original y sus aumentaciones permanecen en el mismo grupo para evitar fuga de datos.",
+    "modelo_final_entrenado_con_todas_muestras": true,
+    "muestras_totales": 1020,
+    "muestras_entrenamiento": 816,
+    "muestras_prueba": 204,
+    "grupos_totales": 300,
+    "grupos_entrenamiento": 240,
+    "grupos_prueba": 60,
     "caracteristicas": 112,
     "clases": [
         "golpe",
@@ -17,68 +23,87 @@
         "ruido_elevado"
     ],
     "distribucion_clases": {
-        "golpe": 70,
-        "puerta": 40,
-        "alarma": 40,
-        "aplausos": 70,
-        "vidrio": 40,
-        "ruido_elevado": 40
+        "golpe": 190,
+        "puerta": 160,
+        "alarma": 160,
+        "aplausos": 190,
+        "vidrio": 160,
+        "ruido_elevado": 160
+    },
+    "distribucion_origen": {
+        "github_original": 240,
+        "aumentado": 720,
+        "local_real": 60
     },
     "metricas": {
-        "accuracy": 0.8666666666666667,
-        "precision_macro": 0.8726190476190476,
-        "recall_macro": 0.8690476190476191,
-        "f1_macro": 0.8682980599647266
+        "accuracy": 0.8578431372549019,
+        "precision_macro": 0.8796446134841179,
+        "recall_macro": 0.852247807017544,
+        "f1_macro": 0.8532537876523282
+    },
+    "metricas_prueba_por_origen": {
+        "aumentado": {
+            "muestras": 144,
+            "accuracy": 0.8680555555555556
+        },
+        "github_original": {
+            "muestras": 48,
+            "accuracy": 0.8333333333333334
+        },
+        "local_real": {
+            "muestras": 12,
+            "accuracy": 0.8333333333333334
+        }
     },
     "reporte_clasificacion": {
         "golpe": {
-            "precision": 1.0,
-            "recall": 0.9285714285714286,
-            "f1-score": 0.9629629629629629,
-            "support": 14.0
+            "precision": 0.7115384615384616,
+            "recall": 0.9736842105263158,
+            "f1-score": 0.8222222222222222,
+            "support": 38.0
         },
         "puerta": {
-            "precision": 0.75,
-            "recall": 0.75,
-            "f1-score": 0.75,
-            "support": 8.0
+            "precision": 0.8947368421052632,
+            "recall": 0.53125,
+            "f1-score": 0.6666666666666666,
+            "support": 32.0
         },
         "alarma": {
             "precision": 1.0,
-            "recall": 1.0,
-            "f1-score": 1.0,
-            "support": 8.0
+            "recall": 0.96875,
+            "f1-score": 0.9841269841269841,
+            "support": 32.0
         },
         "aplausos": {
-            "precision": 0.7857142857142857,
-            "recall": 0.7857142857142857,
-            "f1-score": 0.7857142857142857,
-            "support": 14.0
+            "precision": 0.813953488372093,
+            "recall": 0.9210526315789473,
+            "f1-score": 0.8641975308641975,
+            "support": 38.0
         },
         "vidrio": {
-            "precision": 1.0,
-            "recall": 0.875,
-            "f1-score": 0.9333333333333333,
-            "support": 8.0
+            "precision": 0.8888888888888888,
+            "recall": 0.75,
+            "f1-score": 0.8135593220338984,
+            "support": 32.0
         },
         "ruido_elevado": {
-            "precision": 0.7,
-            "recall": 0.875,
-            "f1-score": 0.7777777777777778,
-            "support": 8.0
+            "precision": 0.96875,
+            "recall": 0.96875,
+            "f1-score": 0.96875,
+            "support": 32.0
         },
-        "accuracy": 0.8666666666666667,
+        "accuracy": 0.8578431372549019,
         "macro avg": {
-            "precision": 0.8726190476190476,
-            "recall": 0.8690476190476191,
-            "f1-score": 0.8682980599647266,
-            "support": 60.0
+            "precision": 0.8796446134841177,
+            "recall": 0.852247807017544,
+            "f1-score": 0.8532537876523282,
+            "support": 204.0
         },
         "weighted avg": {
-            "precision": 0.8766666666666667,
-            "recall": 0.8666666666666667,
-            "f1-score": 0.8695061728395062,
-            "support": 60.0
+            "precision": 0.8727682229824213,
+            "recall": 0.8578431372549019,
+            "f1-score": 0.8526629693517916,
+            "support": 204.0
         }
     },
     "matriz_confusion": {
@@ -92,55 +117,55 @@
         ],
         "valores": [
             [
-                13,
+                37,
+                0,
+                0,
+                0,
                 1,
-                0,
-                0,
-                0,
                 0
             ],
             [
+                9,
+                17,
                 0,
-                6,
-                0,
+                4,
                 2,
-                0,
                 0
             ],
             [
                 0,
                 0,
-                8,
+                31,
                 0,
                 0,
-                0
+                1
             ],
             [
-                0,
-                0,
-                0,
-                11,
-                0,
-                3
-            ],
-            [
-                0,
-                0,
-                0,
-                1,
-                7,
-                0
-            ],
-            [
-                0,
+                2,
                 1,
                 0,
+                35,
+                0,
+                0
+            ],
+            [
+                4,
                 0,
                 0,
-                7
+                4,
+                24,
+                0
+            ],
+            [
+                0,
+                1,
+                0,
+                0,
+                0,
+                31
             ]
         ]
     },
-    "umbral_desconocido": 0.65,
+    "umbral_desconocido": 0.55,
     "errores_dataset": []
 }
