@@ -3,6 +3,7 @@ from django.urls import include, path
 
 
 urlpatterns = [
+
     path(
         "admin/",
         admin.site.urls,
@@ -26,5 +27,10 @@ urlpatterns = [
     path(
         "api/inteligencia/",
         include("inteligencia.urls"),
+    ),
+
+    path(
+        "api/configuraciones/",
+        include("configuraciones.urls"),
     ),
 ]

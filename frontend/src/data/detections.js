@@ -1,4 +1,4 @@
-export const soundTypes=['Golpe','Puerta','Aplausos','Alarmas','Vidrio','Ruido elevado'];export const riskFor=t=>t==='Alarmas'||t==='Vidrio'?'ALTO':t==='Golpe'?'MEDIO':'BAJO';
-const conf={Golpe:92,Puerta:87,Aplausos:88,Alarmas:96,Vidrio:94,'Ruido elevado':83};
-export const seedDetections=Array.from({length:50},(_,i)=>{const type=soundTypes[i%soundTypes.length],h=String(20-Math.floor(i/6)).padStart(2,'0'),m=String((42-i*7+60)%60).padStart(2,'0');return{id:i+1,type,confidence:Math.max(76,Math.min(99,conf[type]+((i*7)%7)-3)),risk:riskFor(type),time:`${h}:${m}:17`,date:'05/10/2025',duration:(1+(i%5)*.4).toFixed(1),audioLevel:58+(i*7)%39}});
-export const chart24=[{time:'00:00',Golpes:4,Puertas:8,Alarmas:1,Otros:3},{time:'04:00',Golpes:9,Puertas:13,Alarmas:2,Otros:5},{time:'08:00',Golpes:15,Puertas:20,Alarmas:3,Otros:8},{time:'12:00',Golpes:11,Puertas:22,Alarmas:4,Otros:12},{time:'16:00',Golpes:20,Puertas:25,Alarmas:2,Otros:15},{time:'20:00',Golpes:28,Puertas:42,Alarmas:3,Otros:17}];
+export const soundTypes = [];
+export const riskFor = () => null;
+export const seedDetections = [];
+export const chart24 = [];
