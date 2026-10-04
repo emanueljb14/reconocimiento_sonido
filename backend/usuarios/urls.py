@@ -1,10 +1,9 @@
 from django.urls import path
 
 from .views import (
-    RegistroView,
     LoginView,
+    RegistroView,
 )
-
 
 urlpatterns = [
     path(
@@ -12,7 +11,6 @@ urlpatterns = [
         RegistroView.as_view(),
         name="registro",
     ),
-
     path(
         "login/",
         LoginView.as_view(),

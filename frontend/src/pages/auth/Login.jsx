@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Lock, Mail, Eye, EyeOff, ArrowRight } from "lucide-react";
+import { Lock, Eye, EyeOff, ArrowRight, ScanFace } from "lucide-react";
 import AuthShell from "./AuthShell";
 import Input from "../../components/ui/Input";
 import Button from "../../components/ui/Button";
@@ -103,6 +103,22 @@ export default function Login() {
                     {!loading && <ArrowRight size={15} className="ml-2 inline" />}
                 </Button>
             </form>
+
+            {/* Separador */}
+            <div className="my-4 flex items-center gap-2">
+                <div className="h-px flex-1 bg-sg-line" />
+                <span className="text-[11px] text-sg-muted uppercase tracking-wider">O accede con</span>
+                <div className="h-px flex-1 bg-sg-line" />
+            </div>
+
+            {/* Botón de Autenticación Biométrica */}
+            <Link
+                to="/login-facial"
+                className="flex w-full items-center justify-center gap-2 rounded-lg border border-sg-cyan/40 bg-sg-cyan/10 py-2.5 text-sm font-semibold text-sg-cyan hover:bg-sg-cyan/20 transition-all"
+            >
+                <ScanFace size={18} />
+                Iniciar sesión con Reconocimiento Facial
+            </Link>
 
             <p className="mt-6 text-center text-xs text-sg-muted">
                 ¿No tienes una cuenta?{" "}

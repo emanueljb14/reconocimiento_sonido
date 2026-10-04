@@ -1,7 +1,6 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-
 Usuario = get_user_model()
 
 
@@ -18,27 +17,39 @@ class RegistroSerializer(serializers.ModelSerializer):
             "username",
             "email",
             "password",
+            "dni",
+            "first_name",
+            "last_name",
+            "rol",
         ]
 
     def create(self, validated_data):
         password = validated_data.pop("password")
-
-        usuario = Usuario(
-            **validated_data
-        )
-
+        usuario = Usuario(**validated_data)
         usuario.set_password(password)
         usuario.save()
-
         return usuario
 
 
 class UsuarioSerializer(serializers.ModelSerializer):
+    # Campo calculado para saber si ya tiene rostro guardado en BD
+    tiene_rostro = serializers.SerializerMethodField()
+
     class Meta:
         model = Usuario
         fields = [
             "id",
             "username",
             "email",
+            "first_name",
+            "last_name",
+            "dni",
             "rol",
+            "foto",
+            "tiene_rostro",
+            "is_active",
         ]
+        read_only_fields = ["id", "tiene_rostro"]
+
+    def get_tiene_rostro(self, obj):
+        return bool(obj.foto)
