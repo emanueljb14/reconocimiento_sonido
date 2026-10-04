@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
+
 Usuario = get_user_model()
 
 
@@ -17,23 +18,34 @@ class RegistroSerializer(serializers.ModelSerializer):
             "username",
             "email",
             "password",
+<<<<<<< HEAD
             "dni",
             "first_name",
             "last_name",
             "rol",
+=======
+>>>>>>> 7928f69916d0abdf3d464c34d8040db02462f9a0
         ]
 
     def create(self, validated_data):
         password = validated_data.pop("password")
-        usuario = Usuario(**validated_data)
+
+        usuario = Usuario(
+            **validated_data
+        )
+
         usuario.set_password(password)
         usuario.save()
         return usuario
 
 
 class UsuarioSerializer(serializers.ModelSerializer):
-    # Campo calculado para validar la existencia del rostro sin exponer el Base64 pesado
-    tiene_rostro = serializers.SerializerMethodField()
+    password = serializers.CharField(
+        write_only=True,
+        required=False,
+        allow_blank=False,
+        min_length=8,
+    )
 
     class Meta:
         model = Usuario
@@ -41,14 +53,47 @@ class UsuarioSerializer(serializers.ModelSerializer):
             "id",
             "username",
             "email",
-            "first_name",
-            "last_name",
-            "dni",
+            "password",
             "rol",
-            "tiene_rostro",
             "is_active",
+            "date_joined",
+            "last_login",
         ]
-        read_only_fields = ["id", "tiene_rostro"]
 
-    def get_tiene_rostro(self, obj):
-        return bool(obj.foto)
+        read_only_fields = [
+            "id",
+            "date_joined",
+            "last_login",
+        ]
+
+    def create(self, validated_data):
+        password = validated_data.pop("password")
+
+        usuario = Usuario(
+            **validated_data
+        )
+
+        usuario.set_password(password)
+        usuario.save()
+
+        return usuario
+
+    def update(self, instance, validated_data):
+        password = validated_data.pop(
+            "password",
+            None,
+        )
+
+        for campo, valor in validated_data.items():
+            setattr(
+                instance,
+                campo,
+                valor,
+            )
+
+        if password:
+            instance.set_password(password)
+
+        instance.save()
+
+        return instance

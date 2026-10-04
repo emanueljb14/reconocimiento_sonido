@@ -1,6 +1,10 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+<<<<<<< HEAD
 import { Lock, Eye, EyeOff, ArrowRight, ScanFace } from "lucide-react";
+=======
+import { Lock, Mail, Eye, EyeOff, ArrowRight } from "lucide-react";
+>>>>>>> 7928f69916d0abdf3d464c34d8040db02462f9a0
 import AuthShell from "./AuthShell";
 import Input from "../../components/ui/Input";
 import Button from "../../components/ui/Button";
@@ -104,6 +108,7 @@ export default function Login() {
                 </Button>
             </form>
 
+<<<<<<< HEAD
             {/* Separador */}
             <div className="my-4 flex items-center gap-2">
                 <div className="h-px flex-1 bg-sg-line" />
@@ -120,6 +125,8 @@ export default function Login() {
                 Iniciar sesión con Reconocimiento Facial
             </Link>
 
+=======
+>>>>>>> 7928f69916d0abdf3d464c34d8040db02462f9a0
             <p className="mt-6 text-center text-xs text-sg-muted">
                 ¿No tienes una cuenta?{" "}
                 <Link to="/register" className="font-semibold text-sg-cyan">
@@ -128,4 +135,8 @@ export default function Login() {
             </p>
         </AuthShell>
     );
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 7928f69916d0abdf3d464c34d8040db02462f9a0

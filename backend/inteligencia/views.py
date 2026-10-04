@@ -7,6 +7,7 @@ import numpy as np
 
 from django.contrib.auth import login
 from rest_framework import status
+<<<<<<< HEAD
 from rest_framework.authtoken.models import Token
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -212,6 +213,16 @@ class LoginFaceView(APIView):
                 {"detail": f"Error interno en el servidor: {str(error)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+=======
+from rest_framework.parsers import FormParser, MultiPartParser
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from .modelo import modelo_existe, obtener_metadata
+from .serializers import AnalisisAudioSerializer
+from .services import analizar_y_registrar
+>>>>>>> 7928f69916d0abdf3d464c34d8040db02462f9a0
 
 
 class AnalizarAudioView(APIView):

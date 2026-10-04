@@ -6,6 +6,7 @@ export const roleLabel = (
         supervisor: "Supervisor",
         user: "Usuario",
     }[role] || role;
+<<<<<<< HEAD
 };
 
 export function normalizeRole(rol) {
@@ -50,6 +51,45 @@ export const riskClass = (
         ).toUpperCase();
 
 
+=======
+};
+
+
+export const roleHome = (
+    role
+) => {
+    return {
+        admin:
+            "/admin/dashboard",
+
+        supervisor:
+            "/supervisor/dashboard",
+
+        user:
+            "/user/dashboard",
+    }[role] || "/login";
+};
+
+
+export const cn = (
+    ...values
+) => {
+    return values
+        .filter(Boolean)
+        .join(" ");
+};
+
+
+export const riskClass = (
+    risk
+) => {
+    const valor =
+        String(
+            risk || ""
+        ).toUpperCase();
+
+
+>>>>>>> 7928f69916d0abdf3d464c34d8040db02462f9a0
     if (
         valor === "CRITICO"
     ) {
