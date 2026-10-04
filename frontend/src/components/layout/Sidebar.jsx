@@ -1,4 +1,5 @@
 import React from "react";
+
 import {
     NavLink,
 } from "react-router-dom";
@@ -8,6 +9,8 @@ import {
     BarChart3,
     Brain,
     ChevronRight,
+    Database,
+    History,
     Home,
     LogOut,
     Mic,
@@ -15,7 +18,6 @@ import {
     Shield,
     Users,
     Volume2,
-    History,
 } from "lucide-react";
 
 import {
@@ -49,6 +51,11 @@ const items = {
             "Estadísticas",
             "/admin/estadisticas",
             BarChart3,
+        ],
+        [
+            "Dataset de audio",
+            "/admin/dataset",
+            Database,
         ],
         [
             "Modelo IA",
@@ -151,7 +158,6 @@ export default function Sidebar() {
         <aside className="hidden w-[218px] shrink-0 border-r border-sg-line bg-[#061633] lg:flex lg:flex-col">
 
             <div className="border-b border-sg-line px-4 py-4">
-
                 <div className="flex items-center gap-2">
 
                     <div className="grid h-9 w-9 place-items-center rounded-xl bg-sg-blue/20 text-sg-cyan">
@@ -172,7 +178,6 @@ export default function Sidebar() {
                     </div>
 
                 </div>
-
             </div>
 
 
@@ -183,7 +188,6 @@ export default function Sidebar() {
                 </div>
 
                 <div className="min-w-0">
-
                     <p className="truncate text-xs font-semibold">
                         {user?.name || "Usuario"}
                     </p>
@@ -191,7 +195,6 @@ export default function Sidebar() {
                     <p className="text-[10px] text-sg-muted">
                         Rol: {nombreRol(user?.role)}
                     </p>
-
                 </div>
 
             </div>
@@ -220,7 +223,6 @@ export default function Sidebar() {
                                 }`
                             }
                         >
-
                             <Icon size={17} />
 
                             <span className="flex-1">
@@ -231,7 +233,6 @@ export default function Sidebar() {
                                 size={13}
                                 className="opacity-40"
                             />
-
                         </NavLink>
                     )
                 )}
@@ -245,7 +246,6 @@ export default function Sidebar() {
                 className="m-3 flex items-center gap-3 rounded-lg px-3 py-2.5 text-xs text-sg-muted transition hover:bg-sg-red/10 hover:text-sg-red"
             >
                 <LogOut size={17} />
-
                 Cerrar sesión
             </button>
 

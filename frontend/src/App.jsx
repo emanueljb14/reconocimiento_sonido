@@ -25,6 +25,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminDetections from "./pages/admin/AdminDetections";
 import AdminHistory from "./pages/admin/AdminHistory";
 import AdminStatistics from "./pages/admin/AdminStatistics";
+import AdminDataset from "./pages/admin/AdminDataset";
 import AIModel from "./pages/admin/AIModel";
 import Users from "./pages/admin/Users";
 import VoiceAssistant from "./pages/admin/VoiceAssistant";
@@ -77,9 +78,7 @@ export default function App() {
     return (
         <Routes>
 
-            {/* =====================================
-          PANTALLA INICIAL
-      ====================================== */}
+            {/* PANTALLA INICIAL */}
 
             <Route
                 path="/"
@@ -87,9 +86,7 @@ export default function App() {
             />
 
 
-            {/* =====================================
-          AUTENTICACIÓN
-      ====================================== */}
+            {/* AUTENTICACIÓN */}
 
             <Route
                 path="/login"
@@ -117,9 +114,7 @@ export default function App() {
             />
 
 
-            {/* =====================================
-          ADMINISTRADOR
-      ====================================== */}
+            {/* ADMINISTRADOR */}
 
             <Route
                 path="/admin"
@@ -168,6 +163,15 @@ export default function App() {
             />
 
             <Route
+                path="/admin/dataset"
+                element={
+                    <Proteger roles={["admin"]}>
+                        <AdminDataset />
+                    </Proteger>
+                }
+            />
+
+            <Route
                 path="/admin/modelo-ia"
                 element={
                     <Proteger roles={["admin"]}>
@@ -204,9 +208,7 @@ export default function App() {
             />
 
 
-            {/* =====================================
-          SUPERVISOR
-      ====================================== */}
+            {/* SUPERVISOR */}
 
             <Route
                 path="/supervisor"
@@ -264,9 +266,7 @@ export default function App() {
             />
 
 
-            {/* =====================================
-          USUARIO
-      ====================================== */}
+            {/* USUARIO */}
 
             <Route
                 path="/user"
@@ -334,9 +334,7 @@ export default function App() {
             />
 
 
-            {/* =====================================
-          RUTA NO ENCONTRADA
-      ====================================== */}
+            {/* RUTA NO ENCONTRADA */}
 
             <Route
                 path="*"
