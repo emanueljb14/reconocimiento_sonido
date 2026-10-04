@@ -18,10 +18,10 @@ urlpatterns = [
         "api/estadisticas/",
         include("estadisticas.urls"),
     ),
-    path(
-        "api/configuraciones/",
-        include("configuraciones.urls"),
-    ),
+   # path(
+      #  "api/configuraciones/",
+       # include("configuraciones.urls"),
+    #),
     path(
         "api/inteligencia/",
         include("inteligencia.urls"),

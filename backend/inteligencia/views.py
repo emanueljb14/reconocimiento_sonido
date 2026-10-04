@@ -51,12 +51,19 @@ class RegisterFaceView(APIView):
     parser_classes = [JSONParser, FormParser, MultiPartParser]
 
     def post(self, request):
-        identifier = request.data.get("dni") or request.data.get("username")
+        identifier = str(request.data.get("dni") or request.data.get("username") or "").strip()
         image_data = request.data.get("image")
 
         if not identifier or not image_data:
             return Response(
                 {"detail": "Se requiere el DNI/Usuario y la imagen capturada."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Validación del formato de DNI (debe ser exactamente 8 dígitos numéricos)
+        if not re.match(r"^\d{8}$", identifier):
+            return Response(
+                {"detail": "El DNI ingresado es inválido. Debe contener exactamente 8 dígitos numéricos."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -107,10 +114,18 @@ class LoginFaceView(APIView):
     def post(self, request):
         dni_ingresado = str(request.data.get("dni", "")).strip()
         image_data = request.data.get("image")
+        liveness_passed = request.data.get("liveness_passed", False)
 
         if not dni_ingresado or not image_data:
             return Response(
                 {"detail": "Ingrese su DNI y capture su rostro con la cámara."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Validación estricta: DNI debe constar únicamente de 8 dígitos numéricos
+        if not re.match(r"^\d{8}$", dni_ingresado):
+            return Response(
+                {"detail": "DNI inválido. Debe ingresar un número de DNI válido de 8 dígitos."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -172,8 +187,12 @@ class LoginFaceView(APIView):
                         "message": f"¡Bienvenido {usuario.first_name or usuario.username}!",
                         "token": token.key,
                         "user": usuario_data,
+                        "usuario": usuario_data,
+                        "rol": usuario.rol,
+                        "role": usuario.rol,
                         "similitud": similitud,
                         "distancia": round(float(distancia), 4),
+                        "liveness_verified": liveness_passed,
                     },
                     status=status.HTTP_200_OK,
                 )

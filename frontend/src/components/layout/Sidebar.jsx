@@ -7,6 +7,7 @@ import {
     Activity,
     BarChart3,
     Brain,
+    Camera, // <--- Importamos el ícono de cámara
     ChevronRight,
     Home,
     LogOut,
@@ -34,6 +35,11 @@ const items = {
             "Usuarios",
             "/admin/usuarios",
             Users,
+        ],
+        [
+            "Registro Facial", // <--- Nueva opción en el menú
+            "/admin/registro-facial",
+            Camera,
         ],
         [
             "Detecciones",

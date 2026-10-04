@@ -31,6 +31,11 @@ class LoginView(ObtainAuthToken):
         usuario_data = UsuarioSerializer(usuario).data
 
         return Response({
+            "status": "success",
+            "message": f"¡Bienvenido {usuario.first_name or usuario.username}!",
             "token": token.key,
             "user": usuario_data,
+            "usuario": usuario_data,
+            "rol": usuario.rol,
+            "role": usuario.rol,
         })

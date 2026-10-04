@@ -32,7 +32,7 @@ class RegistroSerializer(serializers.ModelSerializer):
 
 
 class UsuarioSerializer(serializers.ModelSerializer):
-    # Campo calculado para saber si ya tiene rostro guardado en BD
+    # Campo calculado para validar la existencia del rostro sin exponer el Base64 pesado
     tiene_rostro = serializers.SerializerMethodField()
 
     class Meta:
@@ -45,7 +45,6 @@ class UsuarioSerializer(serializers.ModelSerializer):
             "last_name",
             "dni",
             "rol",
-            "foto",
             "tiene_rostro",
             "is_active",
         ]

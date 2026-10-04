@@ -11,7 +11,8 @@ import ProtectedRoute from "./components/layout/ProtectedRoute";
 ========================================= */
 import SplashScreen from "./pages/auth/SplashScreen";
 import Login from "./pages/auth/Login";
-import FaceLogin from "./pages/auth/FaceLogin";
+import FaceLoginStep1 from "./pages/auth/FaceLoginStep1";
+import FaceLoginScan from "./pages/auth/FaceLoginScan";
 import Register from "./pages/auth/Register";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 
@@ -26,6 +27,7 @@ import AIModel from "./pages/admin/AIModel";
 import Users from "./pages/admin/Users";
 import VoiceAssistant from "./pages/admin/VoiceAssistant";
 import AdminSettings from "./pages/admin/Settings";
+import RegisterFace from "./pages/admin/RegisterFace";
 
 /* =========================================
    SUPERVISOR
@@ -61,7 +63,8 @@ export default function App() {
 
             {/* AUTENTICACIÓN */}
             <Route path="/login" element={<Login />} />
-            <Route path="/login-facial" element={<FaceLogin />} />
+            <Route path="/login-facial" element={<FaceLoginStep1 />} />
+            <Route path="/login-facial/escanear" element={<FaceLoginScan />} />
             <Route path="/registro" element={<Register />} />
             <Route path="/register" element={<Register />} />
             <Route path="/recuperar-password" element={<ForgotPassword />} />
@@ -70,6 +73,7 @@ export default function App() {
             {/* ADMINISTRADOR */}
             <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
             <Route path="/admin/dashboard" element={<Proteger roles={["admin"]}><AdminDashboard /></Proteger>} />
+            <Route path="/admin/registro-facial" element={<Proteger roles={["admin"]}><RegisterFace /></Proteger>} />
             <Route path="/admin/detecciones" element={<Proteger roles={["admin"]}><AdminDetections /></Proteger>} />
             <Route path="/admin/historial" element={<Proteger roles={["admin"]}><AdminHistory /></Proteger>} />
             <Route path="/admin/estadisticas" element={<Proteger roles={["admin"]}><AdminStatistics /></Proteger>} />
