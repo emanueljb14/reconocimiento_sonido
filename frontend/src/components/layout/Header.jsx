@@ -1,1 +1,88 @@
-import React,{useEffect,useState}from'react';import{Bell,ChevronDown,Mic,ShieldCheck}from'lucide-react';import{useAuth}from'../../context/AuthContext';import{roleLabel}from'../../utils/helpers';export default function Header({title,subtitle}){const{user}=useAuth();const[now,setNow]=useState(new Date());useEffect(()=>{const i=setInterval(()=>setNow(new Date()),1000);return()=>clearInterval(i)},[]);return <header className="flex flex-wrap items-center justify-between gap-3 border-b border-sg-line bg-[#04112a]/80 px-4 py-3 backdrop-blur md:px-6"><div><h1 className="text-lg font-bold">{title}</h1>{subtitle&&<p className="text-xs text-sg-muted">{subtitle}</p>}</div><div className="flex items-center gap-2"><span className="hidden items-center gap-1.5 rounded-full border border-sg-green/20 bg-sg-green/10 px-3 py-1.5 text-[10px] text-sg-green sm:flex"><ShieldCheck size={13}/> Sistema activo</span><span className="hidden items-center gap-1.5 rounded-full border border-sg-cyan/20 bg-sg-cyan/10 px-3 py-1.5 text-[10px] text-sg-cyan md:flex"><Mic size={13}/> Micrófono conectado</span><div className="hidden text-right sm:block"><p className="text-[10px] text-sg-muted">05 de octubre de 2025</p><p className="text-xs font-semibold">{now.toLocaleTimeString('es-PE',{hour12:false})}</p></div><button className="relative rounded-lg p-2 text-sg-muted hover:bg-white/5 hover:text-white"><Bell size={19}/><i className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-sg-red"/></button><div className="hidden items-center gap-2 border-l border-sg-line pl-3 sm:flex"><div className="grid h-8 w-8 place-items-center rounded-full bg-slate-300 text-xs font-bold text-slate-700">{user?.name?.[0]||'U'}</div><div><p className="text-xs font-semibold">{user?.name}</p><p className="text-[10px] text-sg-muted">{roleLabel(user?.role)}</p></div><ChevronDown size={14} className="text-sg-muted"/></div></div></header>}
+import React, { useEffect, useState } from 'react';
+import { Bell, ChevronDown, Mic, ShieldCheck, Sun, Moon } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { roleLabel } from '../../utils/helpers';
+import useLocalStorage from '../../hooks/useLocalStorage';
+
+export default function Header({ title, subtitle }) {
+  const { user } = useAuth();
+  const [now, setNow] = useState(new Date());
+
+  // Estado del tema guardado en localStorage ('dark' por defecto)
+  const [theme, setTheme] = useLocalStorage('sg_theme', 'dark');
+
+  // Reloj en tiempo real
+  useEffect(() => {
+    const i = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(i);
+  }, []);
+
+  // Sincronización en la etiqueta <html>
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+  }, [theme]);
+
+  const toggleTheme = () => {
+    const nextTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(nextTheme);
+  };
+
+  return (
+    <header className="flex flex-wrap items-center justify-between gap-3 border-b border-sg-line bg-white/80 dark:bg-[#04112a]/80 text-slate-800 dark:text-white px-4 py-3 backdrop-blur md:px-6 transition-colors">
+      <div>
+        <h1 className="text-lg font-bold">{title}</h1>
+        {subtitle && <p className="text-xs text-sg-muted">{subtitle}</p>}
+      </div>
+
+      <div className="flex items-center gap-2">
+        <span className="hidden items-center gap-1.5 rounded-full border border-sg-green/20 bg-sg-green/10 px-3 py-1.5 text-[10px] text-sg-green sm:flex">
+          <ShieldCheck size={13} /> Sistema activo
+        </span>
+
+        <span className="hidden items-center gap-1.5 rounded-full border border-sg-cyan/20 bg-sg-cyan/10 px-3 py-1.5 text-[10px] text-sg-cyan md:flex">
+          <Mic size={13} /> Micrófono conectado
+        </span>
+
+        <div className="hidden text-right sm:block">
+          <p className="text-[10px] text-sg-muted">05 de octubre de 2025</p>
+          <p className="text-xs font-semibold">
+            {now.toLocaleTimeString('es-PE', { hour12: false })}
+          </p>
+        </div>
+
+        {/* Botón para cambiar entre Modo Oscuro y Claro */}
+        <button
+          onClick={toggleTheme}
+          type="button"
+          className="rounded-lg p-2 text-sg-muted hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white transition-colors"
+          title={theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+        >
+          {theme === 'dark' ? <Sun size={19} /> : <Moon size={19} />}
+        </button>
+
+        {/* Notificaciones */}
+        <button className="relative rounded-lg p-2 text-sg-muted hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white transition-colors">
+          <Bell size={19} />
+          <i className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-sg-red" />
+        </button>
+
+        {/* Perfil de Usuario */}
+        <div className="hidden items-center gap-2 border-l border-sg-line pl-3 sm:flex">
+          <div className="grid h-8 w-8 place-items-center rounded-full bg-slate-300 text-xs font-bold text-slate-700">
+            {user?.name?.[0] || 'U'}
+          </div>
+          <div>
+            <p className="text-xs font-semibold">{user?.name}</p>
+            <p className="text-[10px] text-sg-muted">{roleLabel(user?.role)}</p>
+          </div>
+          <ChevronDown size={14} className="text-sg-muted" />
+        </div>
+      </div>
+    </header>
+  );
+}

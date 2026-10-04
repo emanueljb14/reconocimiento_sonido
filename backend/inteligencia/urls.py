@@ -2,6 +2,8 @@ from django.urls import path
 
 from .views import (
     AnalizarAudioView,
+    DatasetAudioDetalleView,
+    DatasetAudioListCreateView,
     EstadoModeloView,
     MetricasModeloView,
 )
@@ -24,5 +26,17 @@ urlpatterns = [
         "metricas-modelo/",
         MetricasModeloView.as_view(),
         name="inteligencia-metricas-modelo",
+    ),
+
+    path(
+        "dataset/",
+        DatasetAudioListCreateView.as_view(),
+        name="inteligencia-dataset",
+    ),
+
+    path(
+        "dataset/<int:pk>/",
+        DatasetAudioDetalleView.as_view(),
+        name="inteligencia-dataset-detalle",
     ),
 ]
