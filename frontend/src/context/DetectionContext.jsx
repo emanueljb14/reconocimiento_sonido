@@ -1,385 +1,498 @@
 import {
-    createContext,
-    useCallback,
-    useContext,
-    useEffect,
-    useMemo,
-    useState,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
 } from "react";
 
-import { obtenerDetecciones } from "../services/detecciones";
-import { obtenerResumen } from "../services/estadisticas";
-import { analizarGrabacion } from "../services/inteligencia";
-import { grabarWav } from "../utils/grabarWav";
+import {
+  obtenerDetecciones,
+} from "../services/detecciones";
+
+import {
+  obtenerResumen,
+} from "../services/estadisticas";
+
+import {
+  analizarGrabacion,
+} from "../services/inteligencia";
+
+import {
+  grabarWav,
+} from "../utils/grabarWav";
 
 
-const DetectionContext = createContext(null);
+const DetectionContext =
+  createContext(null);
 
 
 const NOMBRES_SONIDOS = {
-    golpe: "Golpe",
-    puerta: "Puerta",
-    alarma: "Alarma",
-    aplausos: "Aplausos",
-    vidrio: "Vidrio",
-    ruido_elevado: "Ruido elevado",
-    desconocido: "Desconocido",
+  golpe: "Golpe",
+  puerta: "Puerta",
+  alarma: "Alarma",
+  aplausos: "Aplausos",
+  vidrio: "Vidrio",
+  ruido_elevado: "Ruido elevado",
+  desconocido: "Desconocido",
 };
 
 
-function normalizarDeteccion(deteccion) {
-    const fecha = deteccion.fecha
-        ? new Date(deteccion.fecha)
-        : null;
+function normalizarDeteccion(
+  deteccion
+) {
+  const fecha =
+    deteccion.fecha
+      ? new Date(
+          deteccion.fecha
+        )
+      : null;
 
-    const confianza = Number(
-        deteccion.confianza || 0
+  const confianza =
+    Number(
+      deteccion.confianza || 0
     );
 
-    return {
-        id: deteccion.id,
+  return {
+    id:
+      deteccion.id,
 
-        type:
-            NOMBRES_SONIDOS[deteccion.tipo_sonido] ||
-            deteccion.tipo_sonido ||
-            "Desconocido",
+    type:
+      NOMBRES_SONIDOS[
+        deteccion.tipo_sonido
+      ] ||
+      deteccion.tipo_sonido ||
+      "Desconocido",
 
-        confidence: Number(
-            (confianza * 100).toFixed(1)
-        ),
+    confidence:
+      Number(
+        (
+          confianza * 100
+        ).toFixed(1)
+      ),
 
-        risk: String(
-            deteccion.nivel_riesgo || "bajo"
-        ).toUpperCase(),
+    risk:
+      String(
+        deteccion.nivel_riesgo ||
+          "bajo"
+      ).toUpperCase(),
 
-        time: fecha
-            ? fecha.toLocaleTimeString("es-PE", {
-                hour12: false,
-            })
-            : "-",
+    time:
+      fecha
+        ? fecha.toLocaleTimeString(
+            "es-PE",
+            {
+              hour12: false,
+            }
+          )
+        : "-",
 
-        date: fecha
-            ? fecha.toLocaleDateString("es-PE")
-            : "-",
+    date:
+      fecha
+        ? fecha.toLocaleDateString(
+            "es-PE"
+          )
+        : "-",
 
-        duration: Number(
-            deteccion.duracion_segundos || 0
-        ).toFixed(1),
+    duration:
+      Number(
+        deteccion.duracion_segundos ||
+          0
+      ).toFixed(1),
 
-        origin:
-            deteccion.origen || "microfono",
+    origin:
+      deteccion.origen ||
+      "microfono",
 
-        raw: deteccion,
-    };
+    raw:
+      deteccion,
+  };
 }
 
 
 export function DetectionProvider({
-    children,
+  children,
 }) {
-    const [
-        detections,
-        setDetections,
-    ] = useState([]);
+  const [
+    detections,
+    setDetections,
+  ] = useState([]);
 
-    const [
-        resumen,
-        setResumen,
-    ] = useState(null);
+  const [
+    resumen,
+    setResumen,
+  ] = useState(null);
 
-    const [
-        loading,
-        setLoading,
-    ] = useState(true);
+  const [
+    loading,
+    setLoading,
+  ] = useState(true);
 
-    const [
-        analyzing,
-        setAnalyzing,
-    ] = useState(false);
+  const [
+    analyzing,
+    setAnalyzing,
+  ] = useState(false);
 
-    const [
-        error,
-        setError,
-    ] = useState("");
+  const [
+    error,
+    setError,
+  ] = useState("");
 
-    // Mantiene compatibilidad con componentes
-    // existentes que puedan usar running.
-    const [
-        running,
-        setRunning,
-    ] = useState(true);
+  const [
+    running,
+    setRunning,
+  ] = useState(true);
 
-    const [
-        tick,
-        setTick,
-    ] = useState(0);
+  const [
+    tick,
+    setTick,
+  ] = useState(0);
 
 
-    const refresh = useCallback(
-        async () => {
-            try {
-                setError("");
+  const refresh =
+    useCallback(
+      async () => {
+        /*
+         * IMPORTANTE:
+         * Si todavía no existe token,
+         * estamos en Splash/Login/Registro.
+         *
+         * No debemos consultar endpoints
+         * protegidos de Django.
+         */
+        const token =
+          localStorage.getItem(
+            "token"
+          );
 
-                const [
-                    historial,
-                    estadisticas,
-                ] = await Promise.all([
-                    obtenerDetecciones(),
-                    obtenerResumen(),
-                ]);
+        if (!token) {
+          setDetections([]);
+          setResumen(null);
+          setError("");
+          setLoading(false);
 
-                const lista =
-                    Array.isArray(historial)
-                        ? historial
-                        : historial?.results || [];
-
-                const normalizadas =
-                    lista.map(
-                        normalizarDeteccion
-                    );
-
-                setDetections(
-                    normalizadas
-                );
-
-                setResumen(
-                    estadisticas
-                );
-
-                setTick(
-                    (actual) =>
-                        actual + 1
-                );
-            } catch (err) {
-                console.error(
-                    "Error cargando detecciones:",
-                    err
-                );
-
-                setError(
-                    "No se pudieron cargar las detecciones del backend."
-                );
-            } finally {
-                setLoading(false);
-            }
-        },
-        []
-    );
-
-
-    /*
-     * Carga inicial.
-     */
-    useEffect(() => {
-        refresh();
-    }, [refresh]);
-
-
-    /*
-     * Actualización periódica.
-     *
-     * IMPORTANTE:
-     * ya NO crea detecciones falsas.
-     *
-     * Solamente consulta Django para saber
-     * si aparecieron detecciones nuevas.
-     */
-    useEffect(() => {
-        if (!running) {
-            return;
+          return;
         }
 
-        const interval = setInterval(
-            () => {
-                refresh();
-            },
-            3000
-        );
+        try {
+          setError("");
 
-        return () => {
-            clearInterval(interval);
-        };
-    }, [running, refresh]);
+          const [
+            historial,
+            estadisticas,
+          ] = await Promise.all([
+            obtenerDetecciones(),
+            obtenerResumen(),
+          ]);
 
+          const lista =
+            Array.isArray(
+              historial
+            )
+              ? historial
+              : historial?.results ||
+                [];
 
-    /*
-     * Captura real desde micrófono.
-     */
-    const analizarMicrofono =
-        useCallback(async () => {
-            try {
-                setAnalyzing(true);
-                setError("");
-
-                /*
-                 * Captura WAV real durante
-                 * tres segundos.
-                 */
-                const wav =
-                    await grabarWav(3);
-
-                /*
-                 * Envía:
-                 *
-                 * React
-                 *   ↓
-                 * Django
-                 *   ↓
-                 * IA
-                 */
-                const resultado =
-                    await analizarGrabacion(
-                        wav
-                    );
-
-                /*
-                 * Actualizamos historial
-                 * y estadísticas después
-                 * de que Django guarde
-                 * la detección.
-                 */
-                await refresh();
-
-                return resultado;
-            } catch (err) {
-                console.error(
-                    "Error analizando micrófono:",
-                    err
-                );
-
-                if (
-                    err.name ===
-                    "NotAllowedError"
-                ) {
-                    setError(
-                        "Debes permitir el acceso al micrófono."
-                    );
-                } else if (
-                    err.name ===
-                    "NotFoundError"
-                ) {
-                    setError(
-                        "No se encontró un micrófono."
-                    );
-                } else {
-                    setError(
-                        "No se pudo analizar el sonido."
-                    );
-                }
-
-                throw err;
-            } finally {
-                setAnalyzing(false);
-            }
-        }, [refresh]);
-
-
-    const latest =
-        detections.length > 0
-            ? detections[0]
-            : null;
-
-
-    const counts =
-        useMemo(() => {
-            return detections.reduce(
-                (acumulador, deteccion) => {
-                    acumulador[
-                        deteccion.type
-                    ] =
-                        (
-                            acumulador[
-                            deteccion.type
-                            ] || 0
-                        ) + 1;
-
-                    return acumulador;
-                },
-                {}
+          const normalizadas =
+            lista.map(
+              normalizarDeteccion
             );
-        }, [detections]);
 
+          setDetections(
+            normalizadas
+          );
 
-    const stats = {
-        today:
-            resumen?.detecciones_hoy ??
-            0,
+          setResumen(
+            estadisticas
+          );
 
-        high:
-            resumen?.riesgos?.alto ??
-            0,
+          setTick(
+            (actual) =>
+              actual + 1
+          );
+        } catch (err) {
+          console.error(
+            "Error cargando detecciones:",
+            err
+          );
 
-        medium:
-            resumen?.riesgos?.medio ??
-            0,
+          /*
+           * Si el token ya no es válido,
+           * evitamos dejar datos anteriores.
+           */
+          if (
+            err?.response?.status ===
+            401
+          ) {
+            setDetections([]);
+            setResumen(null);
 
-        low:
-            resumen?.riesgos?.bajo ??
-            0,
+            setError(
+              "La sesión ha expirado. Inicia sesión nuevamente."
+            );
 
-        critical:
-            resumen?.riesgos?.critico ??
-            0,
+            return;
+          }
 
-        total:
-            resumen?.total_detecciones ??
-            detections.length,
-
-        averageConfidence:
-            resumen?.confianza_promedio ??
-            0,
-    };
-
-
-    return (
-        <DetectionContext.Provider
-            value={{
-                detections,
-
-                setDetections,
-
-                latest,
-
-                counts,
-
-                stats,
-
-                resumen,
-
-                loading,
-
-                analyzing,
-
-                error,
-
-                running,
-
-                setRunning,
-
-                tick,
-
-                refresh,
-
-                analizarMicrofono,
-            }}
-        >
-            {children}
-        </DetectionContext.Provider>
+          setError(
+            "No se pudieron cargar las detecciones del backend."
+          );
+        } finally {
+          setLoading(false);
+        }
+      },
+      []
     );
+
+
+  /*
+   * Carga inicial.
+   */
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+
+  /*
+   * Actualización periódica.
+   *
+   * Si no existe token,
+   * refresh NO hará solicitudes
+   * protegidas.
+   */
+  useEffect(() => {
+    if (!running) {
+      return;
+    }
+
+    const interval =
+      setInterval(
+        () => {
+          refresh();
+        },
+        3000
+      );
+
+    return () => {
+      clearInterval(
+        interval
+      );
+    };
+  }, [
+    running,
+    refresh,
+  ]);
+
+
+  /*
+   * Captura real desde micrófono.
+   */
+  const analizarMicrofono =
+    useCallback(
+      async () => {
+        const token =
+          localStorage.getItem(
+            "token"
+          );
+
+        if (!token) {
+          const errorSesion =
+            new Error(
+              "Debes iniciar sesión para analizar audio."
+            );
+
+          setError(
+            errorSesion.message
+          );
+
+          throw errorSesion;
+        }
+
+        try {
+          setAnalyzing(true);
+          setError("");
+
+          /*
+           * Captura WAV real
+           * durante 3 segundos.
+           */
+          const wav =
+            await grabarWav(3);
+
+          /*
+           * React
+           *   ↓
+           * Django
+           *   ↓
+           * IA
+           */
+          const resultado =
+            await analizarGrabacion(
+              wav
+            );
+
+          /*
+           * Actualiza historial
+           * y estadísticas después
+           * de guardar la detección.
+           */
+          await refresh();
+
+          return resultado;
+        } catch (err) {
+          console.error(
+            "Error analizando micrófono:",
+            err
+          );
+
+          if (
+            err.name ===
+            "NotAllowedError"
+          ) {
+            setError(
+              "Debes permitir el acceso al micrófono."
+            );
+          } else if (
+            err.name ===
+            "NotFoundError"
+          ) {
+            setError(
+              "No se encontró un micrófono."
+            );
+          } else if (
+            err?.response?.status ===
+            401
+          ) {
+            setError(
+              "Debes iniciar sesión nuevamente."
+            );
+          } else {
+            setError(
+              err?.message ||
+                "No se pudo analizar el sonido."
+            );
+          }
+
+          throw err;
+        } finally {
+          setAnalyzing(false);
+        }
+      },
+      [refresh]
+    );
+
+
+  const latest =
+    detections.length > 0
+      ? detections[0]
+      : null;
+
+
+  const counts =
+    useMemo(() => {
+      return detections.reduce(
+        (
+          acumulador,
+          deteccion
+        ) => {
+          acumulador[
+            deteccion.type
+          ] =
+            (
+              acumulador[
+                deteccion.type
+              ] || 0
+            ) + 1;
+
+          return acumulador;
+        },
+        {}
+      );
+    }, [detections]);
+
+
+  const stats = {
+    today:
+      resumen?.detecciones_hoy ??
+      0,
+
+    high:
+      resumen?.riesgos?.alto ??
+      0,
+
+    medium:
+      resumen?.riesgos?.medio ??
+      0,
+
+    low:
+      resumen?.riesgos?.bajo ??
+      0,
+
+    critical:
+      resumen?.riesgos
+        ?.critico ??
+      0,
+
+    total:
+      resumen?.total_detecciones ??
+      detections.length,
+
+    averageConfidence:
+      resumen?.confianza_promedio ??
+      0,
+  };
+
+
+  return (
+    <DetectionContext.Provider
+      value={{
+        detections,
+
+        setDetections,
+
+        latest,
+
+        counts,
+
+        stats,
+
+        resumen,
+
+        loading,
+
+        analyzing,
+
+        error,
+
+        running,
+
+        setRunning,
+
+        tick,
+
+        refresh,
+
+        analizarMicrofono,
+      }}
+    >
+      {children}
+    </DetectionContext.Provider>
+  );
 }
 
 
 export function useDetections() {
-    const contexto =
-        useContext(
-            DetectionContext
-        );
+  const contexto =
+    useContext(
+      DetectionContext
+    );
 
-    if (!contexto) {
-        throw new Error(
-            "useDetections debe utilizarse dentro de DetectionProvider"
-        );
-    }
+  if (!contexto) {
+    throw new Error(
+      "useDetections debe utilizarse dentro de DetectionProvider"
+    );
+  }
 
-    return contexto;
+  return contexto;
 }

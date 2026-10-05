@@ -12,10 +12,9 @@ class DeteccionViewSet(viewsets.ModelViewSet):
 
     serializer_class = DeteccionSerializer
 
-    # TEMPORAL mientras usuarios/login no esté integrado.
     permission_classes = [
-    IsAuthenticated
-]
+        IsAuthenticated
+    ]
 
     filter_backends = [
         DjangoFilterBackend,
@@ -36,41 +35,29 @@ class DeteccionViewSet(viewsets.ModelViewSet):
         "nivel_riesgo",
     ]
 
-    ordering = ["-fecha"]
+    ordering = [
+        "-fecha"
+    ]
 
     def get_queryset(self):
+        """
+        Todos los usuarios autenticados pueden
+        consultar las detecciones registradas
+        en el backend.
+        """
 
-        queryset = (
+        return (
             Deteccion.objects
             .select_related("usuario")
             .all()
         )
 
-        usuario = self.request.user
-
-        if not usuario.is_authenticated:
-            return queryset
-
-        rol = getattr(usuario, "rol", None)
-
-        if rol in [
-            "ADMINISTRADOR",
-            "SUPERVISOR",
-        ]:
-            return queryset
-
-        return queryset.filter(
-            usuario=usuario
-        )
-
     def perform_create(self, serializer):
-
-        usuario = (
-            self.request.user
-            if self.request.user.is_authenticated
-            else None
-        )
+        """
+        Las nuevas detecciones se guardan
+        asociadas al usuario que las generó.
+        """
 
         serializer.save(
-            usuario=usuario
+            usuario=self.request.user
         )

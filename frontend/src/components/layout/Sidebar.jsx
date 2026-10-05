@@ -161,9 +161,26 @@ export default function Sidebar() {
         items[user?.role] || [];
 
     return (
-        <aside className="hidden w-[218px] shrink-0 border-r border-sg-line bg-[#061633] lg:flex lg:flex-col">
+        <aside
+            className="
+                hidden
+                w-[218px]
+                shrink-0
+                border-r
+                border-sg-line
+                bg-[#061633]
+                lg:sticky
+                lg:top-0
+                lg:flex
+                lg:h-screen
+                lg:self-start
+                lg:flex-col
+            "
+        >
 
-            <div className="border-b border-sg-line px-4 py-4">
+            {/* LOGO */}
+            <div className="shrink-0 border-b border-sg-line px-4 py-4">
+
                 <div className="flex items-center gap-2">
 
                     <div className="grid h-9 w-9 place-items-center rounded-xl bg-sg-blue/20 text-sg-cyan">
@@ -171,6 +188,7 @@ export default function Sidebar() {
                     </div>
 
                     <div>
+
                         <div className="text-base font-bold leading-none">
                             SoundGuard{" "}
                             <span className="text-sg-cyan">
@@ -181,19 +199,23 @@ export default function Sidebar() {
                         <div className="mt-1 text-[10px] text-sg-muted">
                             Intelligent Sound Detection
                         </div>
+
                     </div>
 
                 </div>
+
             </div>
 
 
-            <div className="flex items-center gap-3 border-b border-sg-line px-4 py-4">
+            {/* USUARIO */}
+            <div className="shrink-0 flex items-center gap-3 border-b border-sg-line px-4 py-4">
 
                 <div className="grid h-9 w-9 place-items-center rounded-full bg-purple-500/20 text-purple-300">
                     <Shield size={18} />
                 </div>
 
                 <div className="min-w-0">
+
                     <p className="truncate text-xs font-semibold">
                         {user?.name || "Usuario"}
                     </p>
@@ -201,12 +223,14 @@ export default function Sidebar() {
                     <p className="text-[10px] text-sg-muted">
                         Rol: {nombreRol(user?.role)}
                     </p>
+
                 </div>
 
             </div>
 
 
-            <nav className="scrollbar flex-1 space-y-1 overflow-y-auto p-3">
+            {/* MENÚ */}
+            <nav className="scrollbar shrink-0 space-y-1 overflow-y-auto p-3">
 
                 {menu.map(
                     ([
@@ -223,12 +247,14 @@ export default function Sidebar() {
                             className={({
                                 isActive,
                             }) =>
-                                `group flex items-center gap-3 rounded-lg px-3 py-2.5 text-xs transition ${isActive
-                                    ? "bg-sg-blue text-white shadow-lg shadow-blue-950/40"
-                                    : "text-sg-muted hover:bg-white/5 hover:text-white"
+                                `group flex items-center gap-3 rounded-lg px-3 py-2.5 text-xs transition ${
+                                    isActive
+                                        ? "bg-sg-blue text-white shadow-lg shadow-blue-950/40"
+                                        : "text-sg-muted hover:bg-white/5 hover:text-white"
                                 }`
                             }
                         >
+
                             <Icon size={17} />
 
                             <span className="flex-1">
@@ -239,6 +265,7 @@ export default function Sidebar() {
                                 size={13}
                                 className="opacity-40"
                             />
+
                         </NavLink>
                     )
                 )}
@@ -246,14 +273,26 @@ export default function Sidebar() {
             </nav>
 
 
-            <button
-                type="button"
-                onClick={logout}
-                className="m-3 flex items-center gap-3 rounded-lg px-3 py-2.5 text-xs text-sg-muted transition hover:bg-sg-red/10 hover:text-sg-red"
-            >
-                <LogOut size={17} />
-                Cerrar sesión
-            </button>
+            {/* CERRAR SESIÓN */}
+            <div className="shrink-0 px-3 pt-2">
+
+                <button
+                    type="button"
+                    onClick={logout}
+                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-xs text-sg-muted transition hover:bg-sg-red/10 hover:text-sg-red"
+                >
+                    <LogOut size={17} />
+
+                    <span>
+                        Cerrar sesión
+                    </span>
+                </button>
+
+            </div>
+
+
+            {/* ESPACIO LIBRE */}
+            <div className="flex-1" />
 
         </aside>
     );

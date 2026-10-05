@@ -131,11 +131,7 @@ class LoginFaceView(APIView):
 
 class AnalizarAudioView(APIView):
     permission_classes = [IsAuthenticated]
-
-    parser_classes = [
-        MultiPartParser,
-        FormParser,
-    ]
+    parser_classes = [MultiPartParser, FormParser]
 
     def post(self, request):
         serializer = AnalisisAudioSerializer(data=request.data)
@@ -193,12 +189,8 @@ class MetricasModeloView(APIView):
 
 
 class DatasetAudioListCreateView(APIView):
-    permission_classes = [AllowAny]
-
-    parser_classes = [
-        MultiPartParser,
-        FormParser,
-    ]
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
 
     def get(self, request):
         queryset = MuestraAudio.objects.all()
@@ -247,7 +239,7 @@ class DatasetAudioListCreateView(APIView):
 
 
 class DatasetAudioDetalleView(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def get_object(self, pk):
         try:
@@ -260,7 +252,7 @@ class DatasetAudioDetalleView(APIView):
 
         if not muestra:
             return Response(
-                {"detail": "Muestra no encontrada."},
+                {"detail": "Muestra de audio no encontrada."},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
@@ -271,10 +263,15 @@ class DatasetAudioDetalleView(APIView):
 
         if not muestra:
             return Response(
-                {"detail": "Muestra no encontrada."},
+                {"detail": "Muestra de audio no encontrada."},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        eliminar_muestra_dataset(muestra)
-
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        try:
+            eliminar_muestra_dataset(muestra)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except ValueError as error:
+            return Response(
+                {"detail": str(error)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
