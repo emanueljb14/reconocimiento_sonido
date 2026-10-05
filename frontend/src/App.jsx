@@ -23,6 +23,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminDetections from "./pages/admin/AdminDetections";
 import AdminHistory from "./pages/admin/AdminHistory";
 import AdminStatistics from "./pages/admin/AdminStatistics";
+import AdminDataset from "./pages/admin/AdminDataset";
 import AIModel from "./pages/admin/AIModel";
 import Users from "./pages/admin/Users";
 import VoiceAssistant from "./pages/admin/VoiceAssistant";
@@ -77,6 +78,7 @@ export default function App() {
             <Route path="/admin/detecciones" element={<Proteger roles={["admin"]}><AdminDetections /></Proteger>} />
             <Route path="/admin/historial" element={<Proteger roles={["admin"]}><AdminHistory /></Proteger>} />
             <Route path="/admin/estadisticas" element={<Proteger roles={["admin"]}><AdminStatistics /></Proteger>} />
+            <Route path="/admin/dataset" element={<Proteger roles={["admin"]}><AdminDataset /></Proteger>} />
             <Route path="/admin/modelo-ia" element={<Proteger roles={["admin"]}><AIModel /></Proteger>} />
             <Route path="/admin/usuarios" element={<Proteger roles={["admin"]}><Users /></Proteger>} />
             <Route path="/admin/asistente" element={<Proteger roles={["admin"]}><VoiceAssistant /></Proteger>} />

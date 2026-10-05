@@ -2,6 +2,8 @@ from django.urls import path
 
 from .views import (
     AnalizarAudioView,
+    DatasetAudioDetalleView,
+    DatasetAudioListCreateView,
     EstadoModeloView,
     LoginFaceView,
     MetricasModeloView,
@@ -25,6 +27,7 @@ urlpatterns = [
         MetricasModeloView.as_view(),
         name="inteligencia-metricas-modelo",
     ),
+
     # Módulo de Reconocimiento Facial
     path(
         "registro-facial/",
@@ -35,5 +38,17 @@ urlpatterns = [
         "login-facial/",
         LoginFaceView.as_view(),
         name="inteligencia-login-facial",
+    ),
+
+    # Módulo de Dataset Audio
+    path(
+        "dataset/",
+        DatasetAudioListCreateView.as_view(),
+        name="inteligencia-dataset",
+    ),
+    path(
+        "dataset/<int:pk>/",
+        DatasetAudioDetalleView.as_view(),
+        name="inteligencia-dataset-detalle",
     ),
 ]
