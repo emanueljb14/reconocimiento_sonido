@@ -6,10 +6,17 @@ from .views import (
     EstadisticasPorRiesgoView,
     EstadisticasPorSonidoView,
     ResumenEstadisticasView,
+    ResumenPublicoView,
 )
 
 
 urlpatterns = [
+    path(
+        "publico/",
+        ResumenPublicoView.as_view(),
+        name="estadisticas-publico",
+    ),
+
     path(
         "resumen/",
         ResumenEstadisticasView.as_view(),
