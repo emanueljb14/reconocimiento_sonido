@@ -1,8 +1,7 @@
-from django.contrib.auth import get_user_model
-from rest_framework import generics, permissions, status, viewsets
+from django.contrib.auth import get_user_model, authenticate
+from django.db.models import Q
+from rest_framework import generics, permissions, status, viewsets, serializers
 from rest_framework.authtoken.models import Token
-from rest_framework.authtoken.serializers import AuthTokenSerializer
-from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -14,21 +13,78 @@ from .serializers import (
 Usuario = get_user_model()
 
 
+class CustomAuthTokenSerializer(serializers.Serializer):
+    username = serializers.CharField(label="Usuario / Email / DNI")
+    password = serializers.CharField(
+        label="Contraseña",
+        style={'input_type': 'password'},
+        trim_whitespace=False
+    )
+
+    def validate(self, attrs):
+        login_input = attrs.get('username', '').strip()
+        password = attrs.get('password')
+
+        if not login_input or not password:
+            raise serializers.ValidationError('Debe ingresar usuario y contraseña.')
+
+        # Búsqueda insensible a mayúsculas/minúsculas (__iexact) por username, correo o DNI
+        user_obj = Usuario.objects.filter(
+            Q(username__iexact=login_input) | 
+            Q(email__iexact=login_input) | 
+            Q(dni__iexact=login_input)
+        ).first()
+
+        if not user_obj:
+            raise serializers.ValidationError(
+                f'No se encontró el usuario "{login_input}". Verifica si tu usuario es con "o" (jostin) o con "u" (Justin).'
+            )
+
+        if not user_obj.is_active:
+            raise serializers.ValidationError('Esta cuenta de usuario se encuentra inactiva.')
+
+        # Autenticación usando el username exacto recuperado de la BD
+        user = authenticate(
+            request=self.context.get('request'),
+            username=user_obj.username,
+            password=password
+        )
+
+        if not user:
+            raise serializers.ValidationError('La contraseña ingresada es incorrecta.')
+
+        attrs['user'] = user
+        return attrs
+
+
 class RegistroView(generics.CreateAPIView):
     serializer_class = RegistroSerializer
     permission_classes = [permissions.AllowAny]
 
 
-class LoginView(ObtainAuthToken):
+class LoginView(APIView):
     permission_classes = [permissions.AllowAny]
-    serializer_class = AuthTokenSerializer
 
     def post(self, request, *args, **kwargs):
-        serializer = self.serializer_class(
+        serializer = CustomAuthTokenSerializer(
             data=request.data,
             context={"request": request},
         )
-        serializer.is_valid(raise_exception=True)
+        if not serializer.is_valid():
+            errors = serializer.errors
+            mensaje_error = "Credenciales inválidas."
+            if 'non_field_errors' in errors:
+                mensaje_error = errors['non_field_errors'][0]
+            elif 'username' in errors:
+                mensaje_error = errors['username'][0]
+            elif 'password' in errors:
+                mensaje_error = errors['password'][0]
+
+            return Response(
+                {"non_field_errors": [mensaje_error], "detail": mensaje_error},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         usuario = serializer.validated_data["user"]
         token, _ = Token.objects.get_or_create(user=usuario)
         usuario_data = UsuarioSerializer(usuario).data

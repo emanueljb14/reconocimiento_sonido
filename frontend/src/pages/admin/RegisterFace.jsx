@@ -10,6 +10,7 @@ import {
     AlertCircle, 
     RefreshCw, 
     Info,
+    User,
     UserCheck
 } from "lucide-react";
 import DashboardLayout from "../../components/layout/DashboardLayout";
@@ -24,8 +25,10 @@ export default function RegisterFace() {
     // Rol actual del usuario logueado
     const currentRole = user?.role || user?.rol || "user";
     
-    // Tipo de DNI a registrar (fijo para supervisor/admin)
-    const tipoRegistro = "supervisor";
+    // Tipo de DNI a registrar ('usuario' o 'supervisor')
+    const [tipoRegistro, setTipoRegistro] = useState(
+        currentRole === "supervisor" || currentRole === "admin" ? "supervisor" : "usuario"
+    );
     
     // DNI
     const [dni, setDni] = useState("");
@@ -111,10 +114,12 @@ export default function RegisterFace() {
             return;
         }
 
+        const rolLabel = tipoRegistro === "supervisor" ? "Administrador" : "Usuario";
+
         if (!regexDni.test(dni.trim())) {
             setMensaje({ 
                 type: "error", 
-                text: "Ingrese un DNI válido de 8 dígitos para el Administrador." 
+                text: `Ingrese un DNI válido de 8 dígitos para el ${rolLabel}.` 
             });
             return;
         }
@@ -156,6 +161,12 @@ export default function RegisterFace() {
 
     const dashboardPath = roleHome ? roleHome(currentRole) : `/${currentRole}/dashboard`;
 
+    // Etiquetas dinámicas según el tipo de registro
+    const labelDniText = tipoRegistro === "supervisor" ? "DNI DEL ADMINISTRADOR" : "DNI DEL USUARIO";
+    const placeholderDniText = tipoRegistro === "supervisor" 
+        ? "Ingrese DNI del Administrador (8 dígitos)..." 
+        : "Ingrese DNI del Usuario (8 dígitos)...";
+
     return (
         <DashboardLayout
             title="Registro Biométrico Facial"
@@ -180,38 +191,51 @@ export default function RegisterFace() {
                     <div className="lg:col-span-8 overflow-hidden rounded-[24px] border border-sg-line bg-[#061633] p-6 md:p-8 shadow-2xl space-y-6">
                         <form onSubmit={handleRegister} className="space-y-6">
                             
-                            {/* ROL A REGISTRAR */}
-                            <div className="space-y-2">
-                                <label className="block text-xs font-bold uppercase tracking-wider text-purple-300">
-                                    Seleccionar Rol del DNI a Registrar
-                                </label>
-                                <div className="flex gap-4 items-center">
-                                    <label className="flex items-center gap-2 text-xs font-semibold text-white cursor-pointer">
-                                        <input
-                                            type="radio"
-                                            name="tipo_ind"
-                                            value="supervisor"
-                                            checked={true}
-                                            readOnly
-                                            className="accent-purple-500"
-                                        />
-                                        Supervisor / Admin
+                            {/* SOLO SI ES ADMIN O SUPERVISOR SE MUESTRA EL SELECTOR DE TIPO */}
+                            {(currentRole === "admin" || currentRole === "supervisor") && (
+                                <div className="space-y-2">
+                                    <label className="block text-xs font-bold uppercase tracking-wider text-purple-300">
+                                        Seleccionar Rol del DNI a Registrar
                                     </label>
+                                    <div className="flex gap-4 items-center">
+                                        <label className="flex items-center gap-2 text-xs font-semibold text-sg-muted cursor-pointer">
+                                            <input
+                                                type="radio"
+                                                name="tipo_ind"
+                                                value="usuario"
+                                                checked={tipoRegistro === "usuario"}
+                                                onChange={() => setTipoRegistro("usuario")}
+                                                className="accent-purple-500"
+                                            />
+                                            Usuario Regular
+                                        </label>
+                                        <label className="flex items-center gap-2 text-xs font-semibold text-sg-muted cursor-pointer">
+                                            <input
+                                                type="radio"
+                                                name="tipo_ind"
+                                                value="supervisor"
+                                                checked={tipoRegistro === "supervisor"}
+                                                onChange={() => setTipoRegistro("supervisor")}
+                                                className="accent-purple-500"
+                                            />
+                                            Supervisor / Admin
+                                        </label>
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
-                            {/* CAMPO DNI ADMINISTRADOR */}
+                            {/* CAMPO DNI CON ETIQUETA Y PLACEHOLDER DINÁMICOS */}
                             <div className="space-y-2">
                                 <label className="block text-xs font-bold uppercase tracking-wider text-purple-300 flex items-center gap-1.5">
-                                    <UserCheck size={14} />
-                                    DNI DEL ADMINISTRADOR
+                                    {tipoRegistro === "supervisor" ? <UserCheck size={14} /> : <User size={14} />}
+                                    {labelDniText}
                                 </label>
                                 <input
                                     type="text"
                                     maxLength={8}
                                     value={dni}
                                     onChange={(e) => setDni(e.target.value.replace(/\D/g, ""))}
-                                    placeholder="Ingrese DNI del Administrador (8 dígitos)..."
+                                    placeholder={placeholderDniText}
                                     className="w-full rounded-xl border border-sg-line bg-black/40 px-4 py-3.5 text-sm text-white placeholder-sg-muted/50 focus:border-purple-500 focus:outline-none transition tracking-wide"
                                     required
                                 />

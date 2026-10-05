@@ -32,7 +32,9 @@ export default function Login() {
         setLoading(true);
 
         try {
-            const result = await login(username.trim(), password, remember);
+            // Normalizar a minúsculas y quitar espacios extra
+            const cleanUsername = username.trim().toLowerCase();
+            const result = await login(cleanUsername, password, remember);
 
             if (!result.ok) {
                 setErr(result.error);
