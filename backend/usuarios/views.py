@@ -28,7 +28,7 @@ class CustomAuthTokenSerializer(serializers.Serializer):
         if not login_input or not password:
             raise serializers.ValidationError('Debe ingresar usuario y contraseña.')
 
-        # Búsqueda insensible a mayúsculas/minúsculas (__iexact) por username, correo o DNI
+        # Búsqueda por username, correo o DNI (insensible a mayúsculas/minúsculas)
         user_obj = Usuario.objects.filter(
             Q(username__iexact=login_input) | 
             Q(email__iexact=login_input) | 
@@ -36,14 +36,11 @@ class CustomAuthTokenSerializer(serializers.Serializer):
         ).first()
 
         if not user_obj:
-            raise serializers.ValidationError(
-                f'No se encontró el usuario "{login_input}". Verifica si tu usuario es con "o" (jostin) o con "u" (Justin).'
-            )
+            raise serializers.ValidationError(f'No se encontró el usuario "{login_input}".')
 
         if not user_obj.is_active:
             raise serializers.ValidationError('Esta cuenta de usuario se encuentra inactiva.')
 
-        # Autenticación usando el username exacto recuperado de la BD
         user = authenticate(
             request=self.context.get('request'),
             username=user_obj.username,
@@ -97,16 +94,15 @@ class LoginView(APIView):
 
 class RegistrarFacialDobleView(APIView):
     """
-    Endpoint para registrar el rostro tanto de Usuario como de Supervisor
-    en una sola solicitud o de forma independiente mediante DNI.
+    Endpoint para registrar el rostro de Usuario y/o Supervisor mediante DNI.
     """
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
         dni_usuario = request.data.get("dni_usuario")
         dni_supervisor = request.data.get("dni_supervisor")
-        foto_base64 = request.data.get("foto")  # Imagen capturada en Base64
-        encoding_array = request.data.get("encoding")  # Array de floats si ya fue calculado en inteligencia
+        foto_base64 = request.data.get("foto")
+        encoding_array = request.data.get("encoding")
 
         if not foto_base64:
             return Response(
@@ -122,7 +118,6 @@ class RegistrarFacialDobleView(APIView):
 
         actualizados = []
 
-        # Actualizar Usuario si se especificó el DNI
         if dni_usuario:
             try:
                 usuario_obj = Usuario.objects.get(dni=dni_usuario, rol=Usuario.Roles.USUARIO)
@@ -137,7 +132,6 @@ class RegistrarFacialDobleView(APIView):
                     status=status.HTTP_404_NOT_FOUND,
                 )
 
-        # Actualizar Supervisor si se especificó el DNI
         if dni_supervisor:
             try:
                 supervisor_obj = Usuario.objects.get(dni=dni_supervisor, rol=Usuario.Roles.SUPERVISOR)
@@ -167,20 +161,8 @@ class UsuarioViewSet(viewsets.ModelViewSet):
 
     queryset = Usuario.objects.all().order_by("-date_joined")
 
-    search_fields = [
-        "username",
-        "email",
-        "rol",
-        "dni",
-    ]
-
-    ordering_fields = [
-        "username",
-        "email",
-        "rol",
-        "date_joined",
-        "last_login",
-    ]
+    search_fields = ["username", "email", "rol", "dni"]
+    ordering_fields = ["username", "email", "rol", "date_joined", "last_login"]
 
     def get_queryset(self):
         usuario = self.request.user

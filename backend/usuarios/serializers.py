@@ -1,7 +1,6 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-
 Usuario = get_user_model()
 
 
@@ -17,16 +16,13 @@ class RegistroSerializer(serializers.ModelSerializer):
             "id",
             "username",
             "email",
+            "dni",
             "password",
         ]
 
     def create(self, validated_data):
         password = validated_data.pop("password")
-
-        usuario = Usuario(
-            **validated_data
-        )
-
+        usuario = Usuario(**validated_data)
         usuario.set_password(password)
         usuario.save()
         return usuario
@@ -46,8 +42,12 @@ class UsuarioSerializer(serializers.ModelSerializer):
             "id",
             "username",
             "email",
+            "dni",
+            "cargo",
+            "area",
             "password",
             "rol",
+            "foto",
             "is_active",
             "date_joined",
             "last_login",
@@ -61,32 +61,19 @@ class UsuarioSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         password = validated_data.pop("password")
-
-        usuario = Usuario(
-            **validated_data
-        )
-
+        usuario = Usuario(**validated_data)
         usuario.set_password(password)
         usuario.save()
-
         return usuario
 
     def update(self, instance, validated_data):
-        password = validated_data.pop(
-            "password",
-            None,
-        )
+        password = validated_data.pop("password", None)
 
         for campo, valor in validated_data.items():
-            setattr(
-                instance,
-                campo,
-                valor,
-            )
+            setattr(instance, campo, valor)
 
         if password:
             instance.set_password(password)
 
         instance.save()
-
         return instance

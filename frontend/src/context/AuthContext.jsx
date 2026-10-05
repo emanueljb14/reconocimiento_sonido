@@ -72,63 +72,50 @@ export function AuthProvider({ children }) {
     const [user, setUser] = useState(readSession);
 
     const login = async (username, password, remember = true) => {
-    try {
-        const payload = await iniciarSesion({
-            username,
-            password,
-        });
+        try {
+            const payload = await iniciarSesion({
+                username,
+                password,
+            });
 
-        const safe = normalizeUser(payload);
+            const safe = normalizeUser(payload);
 
-        if (!safe.role) {
+            if (!safe.role) {
+                return {
+                    ok: false,
+                    error: "El servidor no devolvió un rol válido.",
+                };
+            }
+
+            setUser(safe);
+
+            localStorage.removeItem(SESSION);
+            sessionStorage.removeItem(SESSION);
+
+            const storage = remember ? localStorage : sessionStorage;
+            storage.setItem(SESSION, JSON.stringify(safe));
+
+            if (payload.token || payload.access) {
+                localStorage.setItem("token", payload.token || payload.access);
+            }
+
+            return {
+                ok: true,
+                user: safe,
+            };
+        } catch (error) {
+            const message =
+                error?.response?.data?.detail ||
+                error?.response?.data?.non_field_errors?.[0] ||
+                "Usuario o contraseña incorrectos";
+
             return {
                 ok: false,
-                error: "El servidor no devolvió un rol válido.",
+                error: message,
             };
         }
+    };
 
-        setUser(safe);
-
-        localStorage.removeItem(SESSION);
-        sessionStorage.removeItem(SESSION);
-
-        const storage = remember ? localStorage : sessionStorage;
-        storage.setItem(SESSION, JSON.stringify(safe));
-
-        if (payload.token || payload.access) {
-            localStorage.setItem("token", payload.token || payload.access);
-        }
-
-        return {
-            ok: true,
-            user: safe,
-        };
-    } catch (error) {
-        // Mapeo completo de las respuestas de error de Django REST Framework
-        const res = error?.response?.data;
-        
-        let message = "Error al conectar con el servidor.";
-
-        if (typeof res === "string") {
-            message = res;
-        } else if (res?.non_field_errors?.[0]) {
-            message = res.non_field_errors[0];
-        } else if (res?.detail) {
-            message = res.detail;
-        } else if (res?.username?.[0]) {
-            message = res.username[0];
-        } else if (res?.password?.[0]) {
-            message = res.password[0];
-        } else if (error?.message) {
-            message = error.message;
-        }
-
-        return {
-            ok: false,
-            error: message,
-        };
-    }
-};
     // NUEVO MÉTODO: Para login biométrico y externos
     const loginWithToken = (token, userPayload) => {
         const safe = normalizeUser(userPayload);
