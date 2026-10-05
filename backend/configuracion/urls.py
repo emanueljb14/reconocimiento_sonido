@@ -11,11 +11,6 @@ urlpatterns = [
         include("usuarios.urls"),
     ),
     path(
-        "api/usuarios/",
-        include("usuarios.urls"),
-    ),
-
-    path(
         "api/detecciones/",
         include("detecciones.urls"),
     ),
@@ -23,24 +18,12 @@ urlpatterns = [
         "api/estadisticas/",
         include("estadisticas.urls"),
     ),
-<<<<<<< HEAD
-   # path(
-      #  "api/configuraciones/",
-       # include("configuraciones.urls"),
-    #),
-=======
-
->>>>>>> 7928f69916d0abdf3d464c34d8040db02462f9a0
     path(
         "api/inteligencia/",
         include("inteligencia.urls"),
     ),
-<<<<<<< HEAD
-=======
-
     path(
         "api/configuraciones/",
         include("configuraciones.urls"),
     ),
->>>>>>> 7928f69916d0abdf3d464c34d8040db02462f9a0
 ]

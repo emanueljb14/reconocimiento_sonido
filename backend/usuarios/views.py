@@ -9,12 +9,9 @@ from .serializers import (
     RegistroSerializer,
     UsuarioSerializer,
 )
-<<<<<<< HEAD
-=======
 
 
 Usuario = get_user_model()
->>>>>>> 7928f69916d0abdf3d464c34d8040db02462f9a0
 
 
 class RegistroView(generics.CreateAPIView):
@@ -25,38 +22,15 @@ class RegistroView(generics.CreateAPIView):
 
 
 class LoginView(ObtainAuthToken):
-<<<<<<< HEAD
-    permission_classes = [permissions.AllowAny]
-=======
     permission_classes = [
         permissions.AllowAny
     ]
 
->>>>>>> 7928f69916d0abdf3d464c34d8040db02462f9a0
     serializer_class = AuthTokenSerializer
 
     def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(
             data=request.data,
-<<<<<<< HEAD
-            context={"request": request},
-        )
-        serializer.is_valid(raise_exception=True)
-
-        usuario = serializer.validated_data["user"]
-        token, _ = Token.objects.get_or_create(user=usuario)
-        usuario_data = UsuarioSerializer(usuario).data
-
-        return Response({
-            "status": "success",
-            "message": f"¡Bienvenido {usuario.first_name or usuario.username}!",
-            "token": token.key,
-            "user": usuario_data,
-            "usuario": usuario_data,
-            "rol": usuario.rol,
-            "role": usuario.rol,
-        })
-=======
             context={
                 "request": request
             },
@@ -227,4 +201,3 @@ class UsuarioViewSet(viewsets.ModelViewSet):
             *args,
             **kwargs,
         )
->>>>>>> 7928f69916d0abdf3d464c34d8040db02462f9a0

@@ -16,7 +16,10 @@ import {
     UserCheck,
     Target,
     Ruler,
-    Zap
+    Zap,
+    ChevronLeft,
+    ChevronRight,
+    Timer
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { roleHome } from "../../utils/helpers";
@@ -40,13 +43,15 @@ export default function FaceLoginScan() {
     const [modelLoaded, setModelLoaded] = useState(false);
     const [isFlashing, setIsFlashing] = useState(false);
 
-    // SECUENCIA DE PASOS
-    // paso 1: 'GIRO' -> Requiere mover la cabeza
-    // paso 2: 'CENTRO' -> Requiere regresar la cabeza al centro
-    // paso 3: 'LISTO' -> Procesa escaneo
+    // ESTADOS DEL FLUJO BIOMÉTRICO:
+    // 'GIRO' -> Espera rotación (muestra flechas)
+    // 'CENTRO' -> Giro detectado, desvanece cuadro y pide volver al centro
+    // 'COUNTDOWN' -> Rostro centrado, cuenta regresiva antes del flash
+    // 'LISTO' -> Flash activo y validando rostro
     const [pasoActual, setPasoActual] = useState("GIRO");
     const [turnDetected, setTurnDetected] = useState(false);
     const [headPoseText, setHeadPoseText] = useState("Sin Rostro");
+    const [countdown, setCountdown] = useState(null);
 
     // Validar DNI en la entrada
     useEffect(() => {
@@ -64,7 +69,6 @@ export default function FaceLoginScan() {
                 await Promise.all([
                     faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
                     faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
-                    faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL)
                 ]);
                 setModelLoaded(true);
             } catch (err) {
@@ -80,12 +84,14 @@ export default function FaceLoginScan() {
         setTurnDetected(false);
         setResultado(null);
         setIsFlashing(false);
+        setCountdown(null);
+        setLoading(false);
     };
 
-    // Rastrear el rostro y lógica paso a paso
+    // Rastrear posición de la cabeza y flujo secuencial
     useEffect(() => {
         let interval;
-        if (modelLoaded && !resultado?.exito && pasoActual !== "LISTO") {
+        if (modelLoaded && !resultado?.exito && pasoActual !== "LISTO" && pasoActual !== "COUNTDOWN") {
             interval = setInterval(async () => {
                 if (
                     webcamRef.current &&
@@ -133,15 +139,14 @@ export default function FaceLoginScan() {
                         else if (rotationRatio < -0.11) setHeadPoseText("Girado a la Derecha");
                         else setHeadPoseText("Centrado");
 
-                        // PASO 1: ESPERAR GIRO
+                        // PASO 1: DETECTAR GIRO
                         if (pasoActual === "GIRO" && isTurned) {
                             setTurnDetected(true);
                             setPasoActual("CENTRO");
                         } 
-                        // PASO 2: VOLVER AL CENTRO TRAS HABER GIRADO
+                        // PASO 2: RETORNO AL CENTRO -> INICIAR CUENTA REGRESIVA DE ESTABILIZACIÓN
                         else if (pasoActual === "CENTRO" && isCentered) {
-                            setPasoActual("LISTO");
-                            triggerAutoScan();
+                            iniciarCuentaRegresiva();
                         }
 
                     } else {
@@ -154,13 +159,32 @@ export default function FaceLoginScan() {
         return () => clearInterval(interval);
     }, [modelLoaded, pasoActual, resultado]);
 
-    // Ejecuta el flash rápido y llama al endpoint de escaneo
-    const triggerAutoScan = () => {
+    // Maneja la cuenta regresiva antes de disparar el flash
+    const iniciarCuentaRegresiva = () => {
+        setPasoActual("COUNTDOWN");
+        setCountdown(2); // 2 segundos de pausa en el centro para estabilizar
+
+        const timer = setInterval(() => {
+            setCountdown((prev) => {
+                if (prev <= 1) {
+                    clearInterval(timer);
+                    ejecutarFlashYEscaner();
+                    return null;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+    };
+
+    // Dispara el destello y activa el escaneo biométrico
+    const ejecutarFlashYEscaner = () => {
+        setPasoActual("LISTO");
         setIsFlashing(true);
+
         setTimeout(() => {
             setIsFlashing(false);
             escanearRostro();
-        }, 150);
+        }, 220);
     };
 
     const escanearRostro = async () => {
@@ -246,11 +270,11 @@ export default function FaceLoginScan() {
         }
     };
 
-    // Generar mensaje contextual superior
     const getInstruccionMensaje = () => {
-        if (loading) return "Procesando firma biométrica...";
-        if (pasoActual === "GIRO") return "Paso 1: Mueva ligeramente su rostro a la DERECHA o IZQUIERDA";
-        if (pasoActual === "CENTRO") return "Paso 2: ¡Excelente! Ahora mantenga su rostro en el CENTRO";
+        if (loading) return "Validando firmas y biometría en servidor...";
+        if (pasoActual === "GIRO") return "Paso 1: Mueva suavemente su rostro a la DERECHA o IZQUIERDA";
+        if (pasoActual === "CENTRO") return "¡Perfecto! Regresa tu rostro al centro";
+        if (pasoActual === "COUNTDOWN") return `Mantenga la vista fija. Escaneando en ${countdown}s...`;
         if (pasoActual === "LISTO") return "¡Capturando biometría!";
         return "Alinee su rostro frente a la cámara...";
     };
@@ -265,6 +289,20 @@ export default function FaceLoginScan() {
                 }
                 .animate-laser {
                     animation: laserScan 2.2s ease-in-out infinite;
+                }
+                @keyframes pulseArrowLeft {
+                    0%, 100% { transform: translateX(0); opacity: 0.4; }
+                    50% { transform: translateX(-10px); opacity: 1; }
+                }
+                @keyframes pulseArrowRight {
+                    0%, 100% { transform: translateX(0); opacity: 0.4; }
+                    50% { transform: translateX(10px); opacity: 1; }
+                }
+                .animate-arrow-left {
+                    animation: pulseArrowLeft 1.2s infinite ease-in-out;
+                }
+                .animate-arrow-right {
+                    animation: pulseArrowRight 1.2s infinite ease-in-out;
                 }
             `}</style>
 
@@ -289,10 +327,22 @@ export default function FaceLoginScan() {
                         
                         {/* FLASH BLANCO AUTOMÁTICO */}
                         <div 
-                            className={`absolute inset-0 bg-white z-30 pointer-events-none transition-opacity duration-150 ${
-                                isFlashing ? "opacity-95" : "opacity-0"
+                            className={`absolute inset-0 bg-white z-40 pointer-events-none transition-opacity duration-200 ${
+                                isFlashing ? "opacity-100" : "opacity-0"
                             }`} 
                         />
+
+                        {/* INDICADORES / FLECHAS ANIMADAS LATERALES (PASO 1) */}
+                        {pasoActual === "GIRO" && (
+                            <>
+                                <div className="absolute left-4 top-1/2 -translate-y-1/2 z-20 flex items-center gap-1 bg-purple-600/30 backdrop-blur-md p-3 rounded-2xl border border-purple-500/40 animate-arrow-left">
+                                    <ChevronLeft size={32} className="text-purple-300" />
+                                </div>
+                                <div className="absolute right-4 top-1/2 -translate-y-1/2 z-20 flex items-center gap-1 bg-purple-600/30 backdrop-blur-md p-3 rounded-2xl border border-purple-500/40 animate-arrow-right">
+                                    <ChevronRight size={32} className="text-purple-300" />
+                                </div>
+                            </>
+                        )}
 
                         <Webcam
                             audio={false}
@@ -308,7 +358,7 @@ export default function FaceLoginScan() {
                             }}
                         />
 
-                        {/* CUADRO FACIAL DINÁMICO */}
+                        {/* CUADRO FACIAL DINÁMICO CON DESVANECIMIENTO EN 'CENTRO' */}
                         {faceBox && (
                             <div
                                 style={{
@@ -317,14 +367,13 @@ export default function FaceLoginScan() {
                                     top: faceBox.top,
                                     width: faceBox.width,
                                     height: faceBox.height,
-                                    transition: "all 0.04s ease-out",
                                 }}
-                                className={`pointer-events-none border-2 rounded-2xl overflow-hidden shadow-[0_0_25px_rgba(168,85,247,0.7)] ${
-                                    resultado?.exito 
-                                        ? "border-emerald-400 bg-emerald-500/20" 
-                                        : pasoActual === "CENTRO" 
-                                            ? "border-cyan-400 bg-cyan-500/10" 
-                                            : "border-purple-500 bg-purple-500/10"
+                                className={`pointer-events-none border-2 rounded-2xl overflow-hidden transition-all duration-500 ${
+                                    pasoActual === "CENTRO" || pasoActual === "COUNTDOWN"
+                                        ? "opacity-0 scale-95 border-transparent shadow-none" 
+                                        : "opacity-100 scale-100 border-purple-500 bg-purple-500/10 shadow-[0_0_25px_rgba(168,85,247,0.7)]"
+                                } ${
+                                    resultado?.exito ? "border-emerald-400 bg-emerald-500/20 opacity-100" : ""
                                 }`}
                             >
                                 <div className="absolute -left-1 -top-1 h-4 w-4 border-l-4 border-t-4 border-purple-300 rounded-tl z-10" />
@@ -338,10 +387,24 @@ export default function FaceLoginScan() {
                             </div>
                         )}
 
-                        {/* MENSAJE DE INDICACIÓN FLOTANTE */}
-                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/85 backdrop-blur-md px-5 py-2.5 rounded-full border border-purple-500/30 text-xs text-center font-semibold shadow-2xl z-20 flex items-center gap-2.5 text-white">
+                        {/* CUENTA REGRESIVA FLOTANTE EN PANTALLA */}
+                        {pasoActual === "COUNTDOWN" && countdown !== null && (
+                            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm z-30 flex flex-col items-center justify-center space-y-2">
+                                <span className="text-7xl font-extrabold text-cyan-300 animate-ping font-mono">
+                                    {countdown}
+                                </span>
+                                <p className="text-xs text-white uppercase tracking-widest font-semibold bg-black/60 px-4 py-1.5 rounded-full border border-cyan-500/30">
+                                    Mantén la vista al centro
+                                </p>
+                            </div>
+                        )}
+
+                        {/* INSTRUCCIÓN FLOTANTE EN CÁMARA */}
+                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/85 backdrop-blur-md px-5 py-2.5 rounded-full border border-purple-500/30 text-xs text-center font-semibold shadow-2xl z-30 flex items-center gap-2.5 text-white">
                             {loading ? (
                                 <RefreshCw size={16} className="animate-spin text-purple-400" />
+                            ) : pasoActual === "COUNTDOWN" ? (
+                                <Timer size={16} className="text-cyan-400 animate-pulse" />
                             ) : (
                                 <Zap size={16} className="text-purple-400 animate-pulse" />
                             )}
@@ -349,7 +412,7 @@ export default function FaceLoginScan() {
                         </div>
                     </div>
 
-                    {/* CONTROLES BRILLO Y CONTRASTE */}
+                    {/* CONTROLES DE IMAGEN */}
                     <div className="grid grid-cols-2 gap-4 mt-4 bg-black/40 p-3 rounded-xl border border-white/5 text-xs">
                         <div className="space-y-1">
                             <div className="flex justify-between text-sg-muted">
@@ -382,23 +445,23 @@ export default function FaceLoginScan() {
                     </div>
                 </div>
 
-                {/* PANEL DERECHO - PASOS Y MÉTRICAS */}
+                {/* PANEL DERECHO - ESTADO Y MÉTRICAS */}
                 <div className="lg:col-span-4 bg-[#04132d] border border-sg-line rounded-3xl p-6 flex flex-col justify-between shadow-2xl space-y-6">
                     <div className="space-y-6">
                         <div>
                             <span className="text-xs uppercase tracking-wider text-purple-400 font-bold">Validación Facial</span>
                             <h2 className="text-xl font-bold text-white mt-1">Usuario: {dni}</h2>
                             <p className="text-xs text-sg-muted mt-1">
-                                Complete el proceso secuencial de validación biométrica.
+                                Siga las instrucciones en pantalla para verificar su identidad.
                             </p>
                         </div>
 
-                        {/* TARJETA DE PRUEBA DE VIDA SECUENCIAL */}
+                        {/* PASOS DE PRUEBA DE VIDA */}
                         <div className="rounded-2xl border border-purple-500/20 bg-black/40 p-4 text-xs space-y-3.5">
                             <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
                                 <span className="flex items-center gap-2 font-bold text-purple-300">
                                     <Activity size={16} className="text-purple-400" />
-                                    Prueba de Vida Secuencial
+                                    Prueba de Vida Dinámica
                                 </span>
                                 {turnDetected && (
                                     <button
@@ -410,36 +473,36 @@ export default function FaceLoginScan() {
                                 )}
                             </div>
 
-                            {/* ITEM 1: MOVER CABEZA */}
+                            {/* ITEM 1: GIRO */}
                             <div className="flex items-center justify-between bg-white/5 p-2.5 rounded-xl border border-white/5">
                                 <div className="flex items-center gap-2">
                                     <Compass size={15} className="text-purple-400 shrink-0" />
-                                    <span>1. Mover rostro (Giro)</span>
+                                    <span>1. Mover rostro (Izq/Der)</span>
                                 </div>
                                 {turnDetected ? (
                                     <span className="flex items-center gap-1 text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20 text-[11px]">
                                         <CheckCircle2 size={13} /> ✓ HECHO
                                     </span>
                                 ) : (
-                                    <span className="text-amber-400 font-semibold bg-amber-500/10 px-2 py-0.5 rounded-md text-[10px]">
-                                        PENDIENTE
+                                    <span className="text-amber-400 font-semibold bg-amber-500/10 px-2 py-0.5 rounded-md text-[10px] animate-pulse">
+                                        MOVER AHORA
                                     </span>
                                 )}
                             </div>
 
-                            {/* ITEM 2: CENTRAR ROSTRO */}
+                            {/* ITEM 2: CENTRAR */}
                             <div className="flex items-center justify-between bg-white/5 p-2.5 rounded-xl border border-white/5">
                                 <div className="flex items-center gap-2">
                                     <Target size={15} className="text-cyan-400 shrink-0" />
                                     <span>2. Centrar rostro</span>
                                 </div>
-                                {pasoActual === "LISTO" || (pasoActual === "CENTRO" && headPoseText === "Centrado") ? (
+                                {pasoActual === "LISTO" || pasoActual === "COUNTDOWN" ? (
                                     <span className="flex items-center gap-1 text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20 text-[11px]">
                                         <CheckCircle2 size={13} /> ✓ HECHO
                                     </span>
                                 ) : pasoActual === "CENTRO" ? (
                                     <span className="text-cyan-400 font-semibold bg-cyan-500/10 px-2 py-0.5 rounded-md text-[10px] animate-pulse">
-                                        CENTRAR AHORA
+                                        REGRESA AL CENTRO
                                     </span>
                                 ) : (
                                     <span className="text-sg-muted text-[10px]">BLOQUEADO</span>
@@ -447,15 +510,15 @@ export default function FaceLoginScan() {
                             </div>
 
                             <div className="flex justify-between items-center text-[11px] text-sg-muted pt-1 px-1">
-                                <span>Posición Actual:</span>
+                                <span>Orientación:</span>
                                 <b className="text-white">{headPoseText}</b>
                             </div>
                         </div>
 
-                        {/* BOTÓN MANUAL / ESTADO */}
+                        {/* BOTÓN REINICIAR / ACCIÓN MANUAL */}
                         <button
-                            onClick={triggerAutoScan}
-                            disabled={loading || pasoActual !== "LISTO"}
+                            onClick={ejecutarFlashYEscaner}
+                            disabled={loading || pasoActual === "GIRO"}
                             className="w-full py-4 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold text-sm shadow-xl shadow-purple-950/50 flex items-center justify-center gap-2 transition disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
                         >
                             {loading ? (
@@ -466,12 +529,12 @@ export default function FaceLoginScan() {
                             ) : (
                                 <>
                                     <ScanFace size={18} />
-                                    Escanear y Validar Rostro
+                                    Escanear Rostro
                                 </>
                             )}
                         </button>
 
-                        {/* TARJETA DE RESULTADOS CON DISEÑO MEJORADO DE MÉTRICAS */}
+                        {/* TARJETA DE RESULTADOS DE SIMILITUD */}
                         {resultado && (
                             <div className={`rounded-2xl border p-5 space-y-5 transition-all ${
                                 resultado.exito 
@@ -483,7 +546,6 @@ export default function FaceLoginScan() {
                                     <span>{resultado.mensaje}</span>
                                 </div>
 
-                                {/* BARRA DE PORCENTAJE MEJORADA */}
                                 <div className="space-y-2 bg-black/40 p-3.5 rounded-xl border border-white/10">
                                     <div className="flex justify-between items-center">
                                         <span className="text-xs text-sg-muted font-medium">Porcentaje de Similitud</span>
@@ -508,9 +570,7 @@ export default function FaceLoginScan() {
                                     </div>
                                 </div>
 
-                                {/* TARJETAS DE DISTANCIA Y UMBRAL MEJORADAS */}
                                 <div className="grid grid-cols-2 gap-3">
-                                    {/* DISTANCIA EUCLIDIANA */}
                                     <div className="bg-black/50 p-3.5 rounded-xl border border-purple-500/20 space-y-1 relative overflow-hidden">
                                         <div className="flex items-center gap-1.5 text-[11px] text-purple-300 font-semibold">
                                             <Ruler size={14} className="text-purple-400" />
@@ -519,14 +579,8 @@ export default function FaceLoginScan() {
                                         <div className="text-lg font-bold text-white font-mono tracking-tight">
                                             {resultado.distancia.toFixed(3)}
                                         </div>
-                                        <span className={`inline-block text-[9px] font-semibold uppercase tracking-wider ${
-                                            resultado.distancia <= resultado.tolerancia ? "text-emerald-400" : "text-rose-400"
-                                        }`}>
-                                            {resultado.distancia <= resultado.tolerancia ? "✓ Óptimo" : "✕ Elevado"}
-                                        </span>
                                     </div>
 
-                                    {/* UMBRAL ESTRICTO */}
                                     <div className="bg-black/50 p-3.5 rounded-xl border border-cyan-500/20 space-y-1 relative overflow-hidden">
                                         <div className="flex items-center gap-1.5 text-[11px] text-cyan-300 font-semibold">
                                             <Target size={14} className="text-cyan-400" />
@@ -535,18 +589,14 @@ export default function FaceLoginScan() {
                                         <div className="text-lg font-bold text-white font-mono tracking-tight">
                                             {resultado.tolerancia.toFixed(3)}
                                         </div>
-                                        <span className="inline-block text-[9px] text-sg-muted uppercase tracking-wider">
-                                            Límite Estricto
-                                        </span>
                                     </div>
                                 </div>
-
                             </div>
                         )}
                     </div>
 
                     <div className="text-center text-[11px] text-sg-muted border-t border-white/5 pt-4">
-                        Plataforma de monitoreo biométrico seguro
+                        Sistema biométrico con verificación de prueba de vida
                     </div>
                 </div>
 

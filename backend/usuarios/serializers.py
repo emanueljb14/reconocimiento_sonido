@@ -18,13 +18,6 @@ class RegistroSerializer(serializers.ModelSerializer):
             "username",
             "email",
             "password",
-<<<<<<< HEAD
-            "dni",
-            "first_name",
-            "last_name",
-            "rol",
-=======
->>>>>>> 7928f69916d0abdf3d464c34d8040db02462f9a0
         ]
 
     def create(self, validated_data):

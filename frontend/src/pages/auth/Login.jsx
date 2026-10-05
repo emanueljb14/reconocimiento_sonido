@@ -1,10 +1,6 @@
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-<<<<<<< HEAD
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Lock, Eye, EyeOff, ArrowRight, ScanFace } from "lucide-react";
-=======
-import { Lock, Mail, Eye, EyeOff, ArrowRight } from "lucide-react";
->>>>>>> 7928f69916d0abdf3d464c34d8040db02462f9a0
 import AuthShell from "./AuthShell";
 import Input from "../../components/ui/Input";
 import Button from "../../components/ui/Button";
@@ -14,12 +10,21 @@ import { roleHome } from "../../utils/helpers";
 export default function Login() {
     const { login } = useAuth();
     const nav = useNavigate();
+    const location = useLocation();
+
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [show, setShow] = useState(false);
     const [remember, setRemember] = useState(true);
     const [err, setErr] = useState("");
     const [loading, setLoading] = useState(false);
+
+    // Rellena el campo usuario si proviene de la validación biométrica
+    useEffect(() => {
+        if (location.state?.recognizedUsername) {
+            setUsername(location.state.recognizedUsername);
+        }
+    }, [location.state]);
 
     const submit = async (event) => {
         event.preventDefault();
@@ -108,25 +113,23 @@ export default function Login() {
                 </Button>
             </form>
 
-<<<<<<< HEAD
-            {/* Separador */}
-            <div className="my-4 flex items-center gap-2">
-                <div className="h-px flex-1 bg-sg-line" />
-                <span className="text-[11px] text-sg-muted uppercase tracking-wider">O accede con</span>
-                <div className="h-px flex-1 bg-sg-line" />
+            {/* SEPARADOR DE MÉTODOS DE AUTENTICACIÓN */}
+            <div className="my-6 flex items-center gap-3">
+                <div className="h-[1px] flex-1 bg-sg-line" />
+                <span className="text-[11px] font-medium text-sg-muted uppercase tracking-wider">O accede con</span>
+                <div className="h-[1px] flex-1 bg-sg-line" />
             </div>
 
-            {/* Botón de Autenticación Biométrica */}
-            <Link
-                to="/login-facial"
-                className="flex w-full items-center justify-center gap-2 rounded-lg border border-sg-cyan/40 bg-sg-cyan/10 py-2.5 text-sm font-semibold text-sg-cyan hover:bg-sg-cyan/20 transition-all"
+            {/* BOTÓN DE ACCESO BIOMÉTRICO FACIAL */}
+            <button
+                type="button"
+                onClick={() => nav("/login-facial")}
+                className="w-full py-3 px-4 rounded-xl border border-purple-500/40 bg-gradient-to-r from-purple-900/30 via-indigo-900/30 to-purple-900/30 hover:from-purple-800/40 hover:to-indigo-800/40 text-purple-200 hover:text-white font-semibold text-xs transition flex items-center justify-center gap-2.5 shadow-lg shadow-purple-950/30 group cursor-pointer"
             >
-                <ScanFace size={18} />
+                <ScanFace size={18} className="text-purple-400 group-hover:scale-110 transition-transform" />
                 Iniciar sesión con Reconocimiento Facial
-            </Link>
+            </button>
 
-=======
->>>>>>> 7928f69916d0abdf3d464c34d8040db02462f9a0
             <p className="mt-6 text-center text-xs text-sg-muted">
                 ¿No tienes una cuenta?{" "}
                 <Link to="/register" className="font-semibold text-sg-cyan">
@@ -135,8 +138,4 @@ export default function Login() {
             </p>
         </AuthShell>
     );
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 7928f69916d0abdf3d464c34d8040db02462f9a0
