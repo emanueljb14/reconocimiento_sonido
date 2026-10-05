@@ -25,7 +25,7 @@ export default function AdminHistory() {
       subtitle="Consulta la actividad detectada de tu cuenta."
     >
       <Card title="Historial reciente" className="p-4">
-        <div className="space-y-3">
+        <div className="space-y-3">         
           {historyList.map((d) => (
             <div key={d.id} className="flex gap-3 rounded-lg border border-sg-line bg-[#04142f] p-3 hover:bg-[#06193b] transition">
               <div className="mt-1 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-sg-blue/15 text-sg-cyan">
