@@ -1,13 +1,10 @@
 import React, { useEffect, useState } from "react";
-
 import DashboardLayout from "../../components/layout/DashboardLayout";
-
 import {
   LineEvents,
   SoundBar,
   RiskPie,
 } from "../../components/dashboard/Charts";
-
 import {
   obtenerResumen,
   obtenerPorSonido,
@@ -15,30 +12,21 @@ import {
   obtenerPorHora,
 } from "../../services/estadisticas";
 
-
 export default function UserStatistics() {
   const [resumen, setResumen] = useState(null);
-
   const [porSonido, setPorSonido] = useState([]);
-
   const [porRiesgo, setPorRiesgo] = useState([]);
-
   const [porHora, setPorHora] = useState([]);
-
   const [cargando, setCargando] = useState(true);
-
   const [error, setError] = useState("");
-
 
   useEffect(() => {
     let activo = true;
-
 
     async function cargarEstadisticas() {
       try {
         setCargando(true);
         setError("");
-
 
         const [
           resumenData,
@@ -52,46 +40,20 @@ export default function UserStatistics() {
           obtenerPorHora(),
         ]);
 
-
-        if (!activo) {
-          return;
-        }
-
+        if (!activo) return;
 
         setResumen(resumenData);
-
-        setPorSonido(
-          Array.isArray(sonidoData)
-            ? sonidoData
-            : []
-        );
-
-        setPorRiesgo(
-          Array.isArray(riesgoData)
-            ? riesgoData
-            : []
-        );
-
-        setPorHora(
-          Array.isArray(horaData)
-            ? horaData
-            : []
-        );
-
+        setPorSonido(Array.isArray(sonidoData) ? sonidoData : []);
+        setPorRiesgo(Array.isArray(riesgoData) ? riesgoData : []);
+        setPorHora(Array.isArray(horaData) ? horaData : []);
       } catch (err) {
-        console.error(
-          "Error cargando estadísticas del usuario:",
-          err
-        );
-
-
+        console.error("Error cargando estadísticas del usuario:", err);
         if (activo) {
           setError(
             err?.response?.data?.detail ||
               "No se pudieron cargar las estadísticas."
           );
         }
-
       } finally {
         if (activo) {
           setCargando(false);
@@ -99,43 +61,23 @@ export default function UserStatistics() {
       }
     }
 
-
     cargarEstadisticas();
-
-
-    const intervalo = setInterval(
-      cargarEstadisticas,
-      5000
-    );
-
+    const intervalo = setInterval(cargarEstadisticas, 5000);
 
     return () => {
       activo = false;
-
       clearInterval(intervalo);
     };
-
   }, []);
-
 
   const confianzaPromedio =
     resumen?.confianza_promedio != null
-      ? `${(
-          Number(
-            resumen.confianza_promedio
-          ) * 100
-        ).toFixed(2)}%`
+      ? `${(Number(resumen.confianza_promedio) * 100).toFixed(2)}%`
       : "--";
 
-
   const riesgoAlto =
-    Number(
-      resumen?.riesgos?.alto || 0
-    ) +
-    Number(
-      resumen?.riesgos?.critico || 0
-    );
-
+    Number(resumen?.riesgos?.alto || 0) +
+    Number(resumen?.riesgos?.critico || 0);
 
   return (
     <DashboardLayout
@@ -151,89 +93,50 @@ export default function UserStatistics() {
           </div>
         )}
 
-
         {/* TARJETAS */}
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-
-          <div className="glass rounded-xl p-4">
-
+          <div className="glass rounded-xl p-4 border border-white/10">
             <p className="text-2xl font-bold">
-              {cargando
-                ? "..."
-                : resumen?.total_detecciones ?? 0}
+              {cargando ? "..." : resumen?.total_detecciones ?? 0}
             </p>
-
-            <p className="text-xs text-sg-muted">
-              Total de eventos
-            </p>
-
+            <p className="text-xs text-sg-muted">Total de eventos</p>
           </div>
 
-
-          <div className="glass rounded-xl p-4">
-
+          <div className="glass rounded-xl p-4 border border-white/10">
             <p className="text-2xl font-bold">
-              {cargando
-                ? "..."
-                : resumen?.detecciones_hoy ?? 0}
+              {cargando ? "..." : resumen?.detecciones_hoy ?? 0}
             </p>
-
-            <p className="text-xs text-sg-muted">
-              Eventos hoy
-            </p>
-
+            <p className="text-xs text-sg-muted">Eventos hoy</p>
           </div>
 
-
-          <div className="glass rounded-xl p-4">
-
+          <div className="glass rounded-xl p-4 border border-white/10">
             <p className="text-2xl font-bold">
-              {cargando
-                ? "..."
-                : confianzaPromedio}
+              {cargando ? "..." : confianzaPromedio}
             </p>
-
-            <p className="text-xs text-sg-muted">
-              Confianza promedio
-            </p>
-
+            <p className="text-xs text-sg-muted">Confianza promedio</p>
           </div>
 
-
-          <div className="glass rounded-xl p-4">
-
+          <div className="glass rounded-xl p-4 border border-white/10">
             <p className="text-2xl font-bold">
-              {cargando
-                ? "..."
-                : riesgoAlto}
+              {cargando ? "..." : riesgoAlto}
             </p>
-
-            <p className="text-xs text-sg-muted">
-              Eventos de riesgo alto
-            </p>
-
+            <p className="text-xs text-sg-muted">Eventos de riesgo alto</p>
           </div>
-
         </div>
-
 
         {/* GRÁFICOS */}
         <div className="grid gap-4 xl:grid-cols-2">
-
-          <LineEvents
-            data={porHora}
-          />
-
-          <SoundBar
-            data={porSonido}
-          />
-
+          <div className="glass rounded-xl p-4 border border-white/5">
+            <LineEvents data={porHora} />
+          </div>
+          <div className="glass rounded-xl p-4 border border-white/5">
+            <SoundBar data={porSonido} />
+          </div>
         </div>
 
-
-        <RiskPie
-          data={porRiesgo}
-        />
+        <div className="glass rounded-xl p-4 border border-white/5">
+          <RiskPie data={porRiesgo} />
+        </div>
 
       </div>
     </DashboardLayout>

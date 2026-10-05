@@ -6,11 +6,11 @@ import numpy as np
 
 from django.contrib.auth import get_user_model
 from rest_framework import status
+from rest_framework.authtoken.models import Token
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.authtoken.models import Token
 
 from .dataset_service import (
     eliminar_muestra_dataset,
@@ -59,7 +59,6 @@ class RegisterFaceView(APIView):
 
             encoding_json = json.dumps(encodings[0].tolist())
 
-            # Si viene un DNI específico, se busca y actualiza ese usuario
             if dni:
                 try:
                     usuario = Usuario.objects.get(dni=dni)
@@ -92,10 +91,6 @@ class RegisterFaceView(APIView):
 
 
 class RegisterFaceDobleView(APIView):
-    """
-    Registra una sola foto/rostro tanto para el Usuario como para el Supervisor.
-    Permite asociar ambos DNI o guardar ambos roles simultáneamente.
-    """
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
@@ -134,7 +129,6 @@ class RegisterFaceDobleView(APIView):
             encoding_json = json.dumps(encodings[0].tolist())
             actualizados = []
 
-            # 1. Registrar para Usuario
             if dni_usuario:
                 try:
                     u_obj = Usuario.objects.get(dni=dni_usuario)
@@ -148,7 +142,6 @@ class RegisterFaceDobleView(APIView):
                         status=status.HTTP_404_NOT_FOUND,
                     )
 
-            # 2. Registrar para Supervisor
             if dni_supervisor:
                 try:
                     s_obj = Usuario.objects.get(dni=dni_supervisor)
@@ -302,7 +295,6 @@ class DatasetAudioListCreateView(APIView):
 
     def get(self, request):
         queryset = MuestraAudio.objects.all()
-
         clase = request.query_params.get("clase")
         origen = request.query_params.get("origen")
 
