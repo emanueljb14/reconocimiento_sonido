@@ -9,20 +9,36 @@ import {
     CheckCircle2, 
     AlertCircle, 
     RefreshCw, 
-    Info 
+    Info,
+    User,
+    UserCheck
 } from "lucide-react";
 import DashboardLayout from "../../components/layout/DashboardLayout";
 import api from "../../services/api";
+import { useAuth } from "../../context/AuthContext";
+import { roleHome } from "../../utils/helpers";
 
 export default function RegisterFace() {
+    const { user } = useAuth();
+    const navigate = useNavigate();
+
+    // Rol actual del usuario logueado
+    const currentRole = user?.role || user?.rol || "user";
+    
+    // Tipo de DNI a registrar ('usuario' o 'supervisor')
+    const [tipoRegistro, setTipoRegistro] = useState(
+        currentRole === "supervisor" ? "supervisor" : "usuario"
+    );
+    
+    // DNI
     const [dni, setDni] = useState("");
+    
     const [cargando, setCargando] = useState(false);
     const [mensaje, setMensaje] = useState(null);
     const [faceBox, setFaceBox] = useState(null);
     const [modelLoaded, setModelLoaded] = useState(false);
 
     const webcamRef = useRef(null);
-    const navigate = useNavigate();
 
     // Carga del modelo desde CDN
     useEffect(() => {
@@ -61,10 +77,8 @@ export default function RegisterFace() {
                     if (detection && videoWidth > 0 && videoHeight > 0) {
                         const { x, y, width, height } = detection.box;
                         
-                        // Corrección para la cámara en modo Espejo
                         const mirroredX = videoWidth - x - width;
 
-                        // Expansión horizontal y vertical
                         const extraWidth = width * 0.70;
                         const extraHeight = height * 0.35;
 
@@ -92,17 +106,19 @@ export default function RegisterFace() {
     const handleRegister = async (e) => {
         e.preventDefault();
         
-        const dniLimpio = dni.trim();
         const regexDni = /^[0-9]{8}$/;
+        const imageSrc = webcamRef.current?.getScreenshot();
 
-        if (!regexDni.test(dniLimpio)) {
-            setMensaje({ type: "error", text: "Ingrese un DNI válido de 8 dígitos numéricos." });
+        if (!imageSrc) {
+            setMensaje({ type: "error", text: "No se pudo obtener la captura de la cámara." });
             return;
         }
 
-        const imageSrc = webcamRef.current?.getScreenshot();
-        if (!imageSrc) {
-            setMensaje({ type: "error", text: "No se pudo obtener la captura de la cámara." });
+        if (!regexDni.test(dni.trim())) {
+            setMensaje({ 
+                type: "error", 
+                text: `Ingrese un DNI válido de 8 dígitos para el ${tipoRegistro === "supervisor" ? "Supervisor" : "Usuario"}.` 
+            });
             return;
         }
 
@@ -112,10 +128,15 @@ export default function RegisterFace() {
         try {
             let data;
             let ok = false;
-            const payload = { dni: dniLimpio, image: imageSrc };
+            const endpoint = "/inteligencia/registro-facial/";
+            const payload = {
+                dni: dni.trim(),
+                tipo_rol: tipoRegistro,
+                image: imageSrc
+            };
 
             try {
-                const response = await api.post("/inteligencia/registro-facial/", payload);
+                const response = await api.post(endpoint, payload);
                 data = response.data;
                 ok = response.status === 200 || response.status === 201;
             } catch (errApi) {
@@ -123,7 +144,7 @@ export default function RegisterFace() {
                 const headers = { "Content-Type": "application/json" };
                 if (token) headers["Authorization"] = `Bearer ${token}`;
 
-                const res = await fetch("http://localhost:8000/api/inteligencia/registro-facial/", {
+                const res = await fetch(`http://localhost:8000/api${endpoint}`, {
                     method: "POST",
                     headers,
                     body: JSON.stringify(payload),
@@ -132,15 +153,16 @@ export default function RegisterFace() {
                 ok = res.ok;
             }
 
-            if (ok && (data.status === "success" || data.message)) {
+            if (ok) {
                 setMensaje({
                     type: "success",
-                    text: data.message || "¡Rostro registrado con éxito!",
+                    text: data.detail || data.message || "¡Rostro registrado exitosamente!",
                 });
 
                 setTimeout(() => {
-                    navigate("/admin/dashboard");
-                }, 1500);
+                    const dashboardPath = roleHome ? roleHome(currentRole) : `/${currentRole}/dashboard`;
+                    navigate(dashboardPath);
+                }, 1800);
             } else {
                 setMensaje({
                     type: "error",
@@ -158,16 +180,18 @@ export default function RegisterFace() {
         }
     };
 
+    const dashboardPath = roleHome ? roleHome(currentRole) : `/${currentRole}/dashboard`;
+
     return (
         <DashboardLayout
             title="Registro Biométrico Facial"
-            subtitle="Asocie la identidad facial de un usuario mediante su DNI"
+            subtitle="Asocie su identidad facial mediante su número de DNI registrado"
         >
             <div className="mx-auto max-w-[1450px] space-y-8 pb-8">
                 {/* BOTÓN VOLVER */}
                 <div className="flex items-center justify-between">
                     <button
-                        onClick={() => navigate("/admin/dashboard")}
+                        onClick={() => navigate(dashboardPath)}
                         className="flex items-center gap-2 rounded-xl border border-sg-line bg-[#061633] px-4 py-2.5 text-xs font-semibold text-sg-muted transition hover:border-purple-500/50 hover:text-white cursor-pointer"
                     >
                         <ArrowLeft size={16} />
@@ -175,28 +199,64 @@ export default function RegisterFace() {
                     </button>
                 </div>
 
-                {/* CONTENIDO PRINCIPAL HOLGADO */}
+                {/* CONTENIDO PRINCIPAL */}
                 <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 items-start">
                     
                     {/* PANEL IZQUIERDO: WEBCAM Y FORMULARIO */}
                     <div className="lg:col-span-8 overflow-hidden rounded-[24px] border border-sg-line bg-[#061633] p-6 md:p-8 shadow-2xl space-y-6">
                         <form onSubmit={handleRegister} className="space-y-6">
+                            
+                            {/* SOLO SI ES ADMIN SE MUESTRA EL SELECTOR DE TIPO */}
+                            {currentRole === "admin" && (
+                                <div className="space-y-2">
+                                    <label className="block text-xs font-bold uppercase tracking-wider text-purple-300">
+                                        Seleccionar Rol del DNI a Registrar
+                                    </label>
+                                    <div className="flex gap-4 items-center">
+                                        <label className="flex items-center gap-2 text-xs font-semibold text-sg-muted cursor-pointer">
+                                            <input
+                                                type="radio"
+                                                name="tipo_ind"
+                                                value="usuario"
+                                                checked={tipoRegistro === "usuario"}
+                                                onChange={() => setTipoRegistro("usuario")}
+                                                className="accent-purple-500"
+                                            />
+                                            Usuario Regular
+                                        </label>
+                                        <label className="flex items-center gap-2 text-xs font-semibold text-sg-muted cursor-pointer">
+                                            <input
+                                                type="radio"
+                                                name="tipo_ind"
+                                                value="supervisor"
+                                                checked={tipoRegistro === "supervisor"}
+                                                onChange={() => setTipoRegistro("supervisor")}
+                                                className="accent-purple-500"
+                                            />
+                                            Supervisor / Admin
+                                        </label>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* CAMPO ÚNICO DNI */}
                             <div className="space-y-2">
-                                <label className="block text-xs font-bold uppercase tracking-wider text-purple-300">
-                                    DNI o Identificador de Usuario
+                                <label className="block text-xs font-bold uppercase tracking-wider text-purple-300 flex items-center gap-1.5">
+                                    {tipoRegistro === "supervisor" ? <UserCheck size={14} /> : <User size={14} />}
+                                    {tipoRegistro === "supervisor" ? "DNI del Supervisor" : "DNI del Usuario"}
                                 </label>
                                 <input
                                     type="text"
                                     maxLength={8}
                                     value={dni}
                                     onChange={(e) => setDni(e.target.value.replace(/\D/g, ""))}
-                                    placeholder="Ingrese el DNI registrado (8 dígitos)..."
+                                    placeholder={`Ingrese DNI del ${tipoRegistro === "supervisor" ? "Supervisor" : "Usuario"} (8 dígitos)...`}
                                     className="w-full rounded-xl border border-sg-line bg-black/40 px-4 py-3.5 text-sm text-white placeholder-sg-muted/50 focus:border-purple-500 focus:outline-none transition tracking-wide"
                                     required
                                 />
                             </div>
 
-                            {/* CÁMARA ESPACIOSA Y AMPLIADA */}
+                            {/* CÁMARA ESPACIOSA */}
                             <div className="relative overflow-hidden rounded-2xl border border-purple-500/30 bg-black flex justify-center items-center h-[460px] md:h-[520px] shadow-[0_0_30px_rgba(168,85,247,0.15)]">
                                 <Webcam
                                     audio={false}
@@ -245,7 +305,7 @@ export default function RegisterFace() {
 
                             <button
                                 type="submit"
-                                disabled={cargando || dni.length !== 8}
+                                disabled={cargando}
                                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 py-4 text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-purple-950/50 transition hover:from-purple-500 hover:to-indigo-500 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
                             >
                                 {cargando ? (
@@ -263,7 +323,7 @@ export default function RegisterFace() {
                         </form>
                     </div>
 
-                    {/* PANEL DERECHO: RECOMENDACIONES ESPACIOSAS */}
+                    {/* PANEL DERECHO: RECOMENDACIONES */}
                     <div className="lg:col-span-4 space-y-6">
                         <div className="rounded-[24px] border border-sg-line bg-[#061633] p-6 md:p-8 space-y-6 shadow-2xl">
                             <h3 className="flex items-center gap-2 text-sm font-bold text-purple-300 border-b border-white/10 pb-4">
@@ -273,19 +333,19 @@ export default function RegisterFace() {
                             <ul className="space-y-4 text-xs leading-relaxed text-sg-muted">
                                 <li className="flex items-start gap-3">
                                     <Info size={16} className="text-purple-400 shrink-0 mt-0.5" />
-                                    <span>Asegúrese de que el usuario esté correctamente registrado en el sistema con su DNI.</span>
+                                    <span>Ingrese el DNI correspondiente a una cuenta activa en el sistema.</span>
                                 </li>
                                 <li className="flex items-start gap-3">
                                     <Info size={16} className="text-purple-400 shrink-0 mt-0.5" />
-                                    <span>El recuadro morado rastreará su rostro en tiempo real para verificar la posición.</span>
+                                    <span>El recuadro morado rastreará su rostro en tiempo real para verificar la posición adecuada.</span>
                                 </li>
                                 <li className="flex items-start gap-3">
                                     <Info size={16} className="text-purple-400 shrink-0 mt-0.5" />
-                                    <span>Mantenga una buena iluminación frontal para asegurar una captura biométrica nítida.</span>
+                                    <span>Mantenga una buena iluminación frontal para asegurar una captura biométrica de alta nitidez.</span>
                                 </li>
                                 <li className="flex items-start gap-3">
                                     <Info size={16} className="text-purple-400 shrink-0 mt-0.5" />
-                                    <span>Evite el uso de lentes oscuros, gorras o elementos que cubran partes del rostro.</span>
+                                    <span>Evite el uso de lentes oscuros, gorras o accesorios que cubran los rasgos faciales principales.</span>
                                 </li>
                             </ul>
                         </div>

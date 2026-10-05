@@ -8,6 +8,7 @@ from .views import (
     LoginFaceView,
     MetricasModeloView,
     RegisterFaceView,
+    RegisterFaceDobleView,
 )
 
 urlpatterns = [
@@ -33,6 +34,11 @@ urlpatterns = [
         "registro-facial/",
         RegisterFaceView.as_view(),
         name="inteligencia-registro-facial",
+    ),
+    path(
+        "registro-facial-doble/",
+        RegisterFaceDobleView.as_view(),
+        name="inteligencia-registro-facial-doble",
     ),
     path(
         "login-facial/",

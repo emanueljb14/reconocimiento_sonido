@@ -43,17 +43,11 @@ export default function FaceLoginScan() {
     const [modelLoaded, setModelLoaded] = useState(false);
     const [isFlashing, setIsFlashing] = useState(false);
 
-    // ESTADOS DEL FLUJO BIOMÉTRICO:
-    // 'GIRO' -> Espera rotación (muestra flechas)
-    // 'CENTRO' -> Giro detectado, desvanece cuadro y pide volver al centro
-    // 'COUNTDOWN' -> Rostro centrado, cuenta regresiva antes del flash
-    // 'LISTO' -> Flash activo y validando rostro
     const [pasoActual, setPasoActual] = useState("GIRO");
     const [turnDetected, setTurnDetected] = useState(false);
     const [headPoseText, setHeadPoseText] = useState("Sin Rostro");
     const [countdown, setCountdown] = useState(null);
 
-    // Validar DNI en la entrada
     useEffect(() => {
         const regexDni = /^[0-9]{8}$/;
         if (!dni || !regexDni.test(dni)) {
@@ -61,7 +55,6 @@ export default function FaceLoginScan() {
         }
     }, [dni, navigate]);
 
-    // Carga de modelos biométricos
     useEffect(() => {
         const loadModels = async () => {
             try {
@@ -78,7 +71,6 @@ export default function FaceLoginScan() {
         loadModels();
     }, []);
 
-    // Reiniciar Desafío Biométrico
     const resetChallenge = () => {
         setPasoActual("GIRO");
         setTurnDetected(false);
@@ -88,7 +80,6 @@ export default function FaceLoginScan() {
         setLoading(false);
     };
 
-    // Rastrear posición de la cabeza y flujo secuencial
     useEffect(() => {
         let interval;
         if (modelLoaded && !resultado?.exito && pasoActual !== "LISTO" && pasoActual !== "COUNTDOWN") {
@@ -139,12 +130,10 @@ export default function FaceLoginScan() {
                         else if (rotationRatio < -0.11) setHeadPoseText("Girado a la Derecha");
                         else setHeadPoseText("Centrado");
 
-                        // PASO 1: DETECTAR GIRO
                         if (pasoActual === "GIRO" && isTurned) {
                             setTurnDetected(true);
                             setPasoActual("CENTRO");
                         } 
-                        // PASO 2: RETORNO AL CENTRO -> INICIAR CUENTA REGRESIVA DE ESTABILIZACIÓN
                         else if (pasoActual === "CENTRO" && isCentered) {
                             iniciarCuentaRegresiva();
                         }
@@ -159,10 +148,9 @@ export default function FaceLoginScan() {
         return () => clearInterval(interval);
     }, [modelLoaded, pasoActual, resultado]);
 
-    // Maneja la cuenta regresiva antes de disparar el flash
     const iniciarCuentaRegresiva = () => {
         setPasoActual("COUNTDOWN");
-        setCountdown(2); // 2 segundos de pausa en el centro para estabilizar
+        setCountdown(2);
 
         const timer = setInterval(() => {
             setCountdown((prev) => {
@@ -176,7 +164,6 @@ export default function FaceLoginScan() {
         }, 1000);
     };
 
-    // Dispara el destello y activa el escaneo biométrico
     const ejecutarFlashYEscaner = () => {
         setPasoActual("LISTO");
         setIsFlashing(true);
@@ -231,7 +218,7 @@ export default function FaceLoginScan() {
                     tolerancia: 0.420,
                 });
 
-                const userObj = data.user || data.usuario || { username: dni, rol: data.rol || "admin" };
+                const userObj = data.user || data.usuario || { username: dni, role: data.role || data.rol || "user" };
                 
                 let safeUser = userObj;
                 if (loginWithToken) {
@@ -241,8 +228,14 @@ export default function FaceLoginScan() {
                     localStorage.setItem("sg_session", JSON.stringify(userObj));
                 }
 
-                const targetRole = safeUser?.role || safeUser?.rol || data.rol || "admin";
-                const targetPath = roleHome ? roleHome(targetRole) : (targetRole === "admin" ? "/admin/dashboard" : "/user/dashboard");
+                // Determinación del Rol devuelto por el Servidor
+                const targetRole = safeUser?.role || safeUser?.rol || data.role || data.rol || "user";
+                
+                // Mapeo dinámico al Dashboard según el rol devuelto
+                let targetPath = `/${targetRole}/dashboard`;
+                if (roleHome) {
+                    targetPath = roleHome(targetRole);
+                }
 
                 setTimeout(() => {
                     navigate(targetPath, { replace: true });
@@ -332,7 +325,7 @@ export default function FaceLoginScan() {
                             }`} 
                         />
 
-                        {/* INDICADORES / FLECHAS ANIMADAS LATERALES (PASO 1) */}
+                        {/* FLECHAS ANIMADAS LATERALES */}
                         {pasoActual === "GIRO" && (
                             <>
                                 <div className="absolute left-4 top-1/2 -translate-y-1/2 z-20 flex items-center gap-1 bg-purple-600/30 backdrop-blur-md p-3 rounded-2xl border border-purple-500/40 animate-arrow-left">
@@ -358,7 +351,7 @@ export default function FaceLoginScan() {
                             }}
                         />
 
-                        {/* CUADRO FACIAL DINÁMICO CON DESVANECIMIENTO EN 'CENTRO' */}
+                        {/* CUADRO FACIAL DINÁMICO */}
                         {faceBox && (
                             <div
                                 style={{
@@ -387,7 +380,7 @@ export default function FaceLoginScan() {
                             </div>
                         )}
 
-                        {/* CUENTA REGRESIVA FLOTANTE EN PANTALLA */}
+                        {/* CUENTA REGRESIVA FLOTANTE */}
                         {pasoActual === "COUNTDOWN" && countdown !== null && (
                             <div className="absolute inset-0 bg-black/40 backdrop-blur-sm z-30 flex flex-col items-center justify-center space-y-2">
                                 <span className="text-7xl font-extrabold text-cyan-300 animate-ping font-mono">
@@ -399,7 +392,7 @@ export default function FaceLoginScan() {
                             </div>
                         )}
 
-                        {/* INSTRUCCIÓN FLOTANTE EN CÁMARA */}
+                        {/* INSTRUCCIÓN FLOTANTE */}
                         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/85 backdrop-blur-md px-5 py-2.5 rounded-full border border-purple-500/30 text-xs text-center font-semibold shadow-2xl z-30 flex items-center gap-2.5 text-white">
                             {loading ? (
                                 <RefreshCw size={16} className="animate-spin text-purple-400" />
@@ -515,7 +508,7 @@ export default function FaceLoginScan() {
                             </div>
                         </div>
 
-                        {/* BOTÓN REINICIAR / ACCIÓN MANUAL */}
+                        {/* BOTÓN ESCANEAR */}
                         <button
                             onClick={ejecutarFlashYEscaner}
                             disabled={loading || pasoActual === "GIRO"}
@@ -534,7 +527,7 @@ export default function FaceLoginScan() {
                             )}
                         </button>
 
-                        {/* TARJETA DE RESULTADOS DE SIMILITUD */}
+                        {/* TARJETA DE RESULTADOS */}
                         {resultado && (
                             <div className={`rounded-2xl border p-5 space-y-5 transition-all ${
                                 resultado.exito 

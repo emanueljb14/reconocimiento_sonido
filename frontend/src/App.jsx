@@ -87,6 +87,7 @@ export default function App() {
             {/* SUPERVISOR */}
             <Route path="/supervisor" element={<Navigate to="/supervisor/dashboard" replace />} />
             <Route path="/supervisor/dashboard" element={<Proteger roles={["supervisor"]}><SupervisorDashboard /></Proteger>} />
+            <Route path="/supervisor/registro-facial" element={<Proteger roles={["supervisor"]}><RegisterFace /></Proteger>} />
             <Route path="/supervisor/detecciones" element={<Proteger roles={["supervisor"]}><SupervisorDetections /></Proteger>} />
             <Route path="/supervisor/historial" element={<Proteger roles={["supervisor"]}><SupervisorHistory /></Proteger>} />
             <Route path="/supervisor/estadisticas" element={<Proteger roles={["supervisor"]}><SupervisorStatistics /></Proteger>} />
@@ -96,6 +97,7 @@ export default function App() {
             <Route path="/user" element={<Navigate to="/user/dashboard" replace />} />
             <Route path="/usuario" element={<Navigate to="/user/dashboard" replace />} />
             <Route path="/user/dashboard" element={<Proteger roles={["user"]}><UserDashboard /></Proteger>} />
+            <Route path="/user/registro-facial" element={<Proteger roles={["user"]}><RegisterFace /></Proteger>} />
             <Route path="/user/detecciones" element={<Proteger roles={["user"]}><UserDetections /></Proteger>} />
             <Route path="/user/historial" element={<Proteger roles={["user"]}><UserHistory /></Proteger>} />
             <Route path="/user/estadisticas" element={<Proteger roles={["user"]}><UserStatistics /></Proteger>} />
