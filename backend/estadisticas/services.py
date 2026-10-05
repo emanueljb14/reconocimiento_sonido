@@ -1,31 +1,20 @@
 from datetime import timedelta
 
 from django.db.models import Avg, Count
-from django.db.models.functions import TruncHour, TruncDate
+from django.db.models.functions import TruncDate, TruncHour
 from django.utils import timezone
 
 from detecciones.models import Deteccion
 
 
-ROLES_GLOBALES = [
-    "ADMINISTRADOR",
-    "SUPERVISOR",
-]
-
-
 def obtener_queryset(usuario):
-    queryset = Deteccion.objects.all()
+    """
+    Devuelve todas las detecciones del sistema.
 
-    # Temporal mientras usuarios todavía no esté integrado.
-    if not usuario.is_authenticated:
-        return queryset
-
-    rol = getattr(usuario, "rol", None)
-
-    if rol in ROLES_GLOBALES:
-        return queryset
-
-    return queryset.filter(usuario=usuario)
+    ADMINISTRADOR, SUPERVISOR y USUARIO podrán
+    visualizar los datos registrados en el backend.
+    """
+    return Deteccion.objects.all()
 
 
 def obtener_resumen(usuario):
@@ -40,7 +29,9 @@ def obtener_resumen(usuario):
         microsecond=0,
     )
 
-    hace_24_horas = ahora - timedelta(hours=24)
+    hace_24_horas = ahora - timedelta(
+        hours=24
+    )
 
     detecciones_hoy = queryset.filter(
         fecha__gte=inicio_dia
@@ -72,19 +63,28 @@ def obtener_resumen(usuario):
 
     return {
         "total_detecciones": queryset.count(),
-        "detecciones_hoy": detecciones_hoy.count(),
-        "ultimas_24_horas": ultimas_24_horas.count(),
-        "confianza_promedio": round(
-            float(promedio),
-            4,
-        ),
+
+        "detecciones_hoy":
+            detecciones_hoy.count(),
+
+        "ultimas_24_horas":
+            ultimas_24_horas.count(),
+
+        "confianza_promedio":
+            round(
+                float(promedio),
+                4,
+            ),
+
         "riesgos": {
             "bajo": riesgo_bajo,
             "medio": riesgo_medio,
             "alto": riesgo_alto,
             "critico": riesgo_critico,
         },
-        "actualizado_en": ahora.isoformat(),
+
+        "actualizado_en":
+            ahora.isoformat(),
     }
 
 
@@ -94,7 +94,9 @@ def obtener_por_sonido(usuario):
     datos = (
         queryset
         .values("tipo_sonido")
-        .annotate(total=Count("id"))
+        .annotate(
+            total=Count("id")
+        )
         .order_by("-total")
     )
 
@@ -107,7 +109,9 @@ def obtener_por_riesgo(usuario):
     datos = (
         queryset
         .values("nivel_riesgo")
-        .annotate(total=Count("id"))
+        .annotate(
+            total=Count("id")
+        )
         .order_by("-total")
     )
 
@@ -123,23 +127,35 @@ def obtener_por_hora(usuario):
 
     datos = (
         queryset
-        .filter(fecha__gte=desde)
-        .annotate(hora=TruncHour("fecha"))
+        .filter(
+            fecha__gte=desde
+        )
+        .annotate(
+            hora=TruncHour("fecha")
+        )
         .values("hora")
-        .annotate(total=Count("id"))
+        .annotate(
+            total=Count("id")
+        )
         .order_by("hora")
     )
 
     return [
         {
-            "hora": item["hora"].isoformat(),
-            "total": item["total"],
+            "hora":
+                item["hora"].isoformat(),
+
+            "total":
+                item["total"],
         }
         for item in datos
     ]
 
 
-def obtener_por_dia(usuario, dias=7):
+def obtener_por_dia(
+    usuario,
+    dias=7,
+):
     queryset = obtener_queryset(usuario)
 
     desde = timezone.now() - timedelta(
@@ -148,17 +164,26 @@ def obtener_por_dia(usuario, dias=7):
 
     datos = (
         queryset
-        .filter(fecha__gte=desde)
-        .annotate(dia=TruncDate("fecha"))
+        .filter(
+            fecha__gte=desde
+        )
+        .annotate(
+            dia=TruncDate("fecha")
+        )
         .values("dia")
-        .annotate(total=Count("id"))
+        .annotate(
+            total=Count("id")
+        )
         .order_by("dia")
     )
 
     return [
         {
-            "dia": item["dia"].isoformat(),
-            "total": item["total"],
+            "dia":
+                item["dia"].isoformat(),
+
+            "total":
+                item["total"],
         }
         for item in datos
     ]
